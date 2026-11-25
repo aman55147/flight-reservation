@@ -767,17 +767,17 @@ function App() {
           <>
             <section className="hero-section">
               <div className="hero-copy">
-                <div className="eyebrow"><span className="eyebrow-line" /><Icon name="plane" size={16} /> SKYBOUND AVIATION • ALL-INDIA CONNECTIVITY</div>
-                <h1>Experience Next-Generation <span>Air Travel</span> With Transparent INR Fares</h1>
-                <p>Connecting 115 verified operational airports across all 28 Indian States &amp; 8 Union Territories with direct trunk schedules and 1-stop connecting routes.</p>
+                <div className="eyebrow"><span className="eyebrow-line" /><Icon name="plane" size={16} /> YOUR NEXT JOURNEY STARTS HERE</div>
+                <h1>Find your next <span>great escape.</span></h1>
+                <p>Explore sample routes, compare clear fares, and shape a trip that feels like yours — all in just a few clicks.</p>
                 <div className="hero-stats">
-                  <div><strong>115+</strong><span>Indian Airports</span></div>
-                  <div><strong>28 States &amp; 8 UTs</strong><span>Nationwide Coverage</span></div>
-                  <div><strong>4 Cabins</strong><span>Economy to Business</span></div>
-                  <div><strong>Instant PNR</strong><span>Zero Real Charges</span></div>
+                  <div><strong>17</strong><span>Demo destinations</span></div>
+                  <div><strong>4 cabins</strong><span>From economy to first</span></div>
+                  <div><strong>Your way</strong><span>One-way or return</span></div>
+                  <div><strong>Zero charge</strong><span>Safe demo checkout</span></div>
                 </div>
               </div>
-              <div className="hero-art" aria-label="Airplane flying above a mountain landscape">
+              <div className="hero-art" aria-label="Illustration of an airplane flying toward the sunset over a mountain landscape">
                 <div className="aceternity-spotlight" aria-hidden="true" />
                 <div className="hero-orbit orbit-one" /><div className="hero-orbit orbit-two" />
                 <div className="hero-sky-glow" aria-hidden="true" />
@@ -789,6 +789,11 @@ function App() {
                 <div className="hero-route-label"><span className="route-dot" />DELHI TO WHEREVER YOU DREAM</div>
                 <div className="mountain mountain-back" /><div className="mountain mountain-front" />
                 <div className="hero-art-note"><span>01 / 04</span><span>CHASE THE HORIZON</span></div>
+                <div className="hero-route-card" aria-label="Sample fare from Delhi to Mumbai from 4,499 rupees">
+                  <span><i /> WEEKEND FAVOURITE</span>
+                  <strong>Delhi <b>→</b> Mumbai</strong>
+                  <small>Sample fares from <em>₹4,499</em></small>
+                </div>
               </div>
               <div className="hero-index"><span>01</span><span className="index-rule" /><span>04</span></div>
             </section>
