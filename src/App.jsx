@@ -87,6 +87,14 @@ const DESTINATIONS = [
   { code: 'DXB', country: 'UNITED ARAB EMIRATES', tag: 'INTERNATIONAL BESTSELLER', price: 15800, art: 'dubai', route: 'DEL → DXB', detail: '4h 00m Non-stop', description: 'Experience architectural marvels, luxury shopping, and desert sky lounges with daily non-stop A350 departures.' },
   { code: 'SIN', country: 'REPUBLIC OF SINGAPORE', tag: 'GARDEN CITY ESCAPE', price: 16900, art: 'singapore', route: 'BOM → SIN', detail: '5h 35m Non-stop', description: 'Fly from Mumbai to Changi and explore Marina Bay Sands, Gardens by the Bay, and celebrated street dining.' },
   { code: 'LHR', country: 'UNITED KINGDOM', tag: 'FLAGSHIP LONG-HAUL', price: 38900, art: 'london', route: 'DEL → LHR', detail: '9h 20m Flagship', description: 'Fly our A350-1000 flagship to London Heathrow with full dining, OLED screens, and generous baggage.' },
+  { code: 'GOI', country: 'GOA, INDIA', tag: 'COASTAL WEEKEND', price: 4899, art: 'goa', route: 'BOM → GOI', detail: '1h 20m Non-stop', description: 'Trade the city rush for palm-lined beaches, easy afternoons, and a relaxed Arabian Sea escape.' },
+  { code: 'BLR', country: 'KARNATAKA, INDIA', tag: 'CITY & CULTURE', price: 6299, art: 'bengaluru', route: 'DEL → BLR', detail: '2h 45m Non-stop', description: 'Discover Bengaluru’s gardens, neighbourhood cafés, and lively mix of culture and technology.' },
+]
+const ROUTE_MAP_AIRPORTS = [
+  { code: 'LHR', x: 202, y: 107 }, { code: 'DXB', x: 326, y: 211 },
+  { code: 'DEL', x: 407, y: 168 }, { code: 'BOM', x: 388, y: 244 },
+  { code: 'BLR', x: 432, y: 287 }, { code: 'GOI', x: 370, y: 266 },
+  { code: 'SIN', x: 548, y: 310 }, { code: 'NRT', x: 660, y: 191 },
 ]
 const FESTIVE_OFFERS = [
   { style: 'christmas', label: 'CHRISTMAS GETAWAY · DEC 18-27', discount: 'Save 15%', title: 'Christmas lights escape', description: 'Explore London, Dubai, or Singapore in the festive season.', code: 'SANTASAVE15' },
@@ -147,6 +155,65 @@ function Icon({ name, size = 18, className = '' }) {
 function formatDate(dateString) {
   if (!dateString) return 'Choose a date'
   return new Date(`${dateString}T12:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
+function dateKey(date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+}
+
+function getDemoFares(from, to, currency, date) {
+  const routeSeed = [...`${from}${to}`].reduce((total, character) => total + character.charCodeAt(0), 0)
+  const daySeed = Math.floor(date.getTime() / 86400000)
+  const variation = ((routeSeed + daySeed * 3) % 9) - 4
+  const base = currency === 'INR' ? 4299 + (routeSeed % 7) * 390 : 179 + (routeSeed % 5) * 14
+  const step = currency === 'INR' ? 240 : 8
+  return Math.max(currency === 'INR' ? 2999 : 99, Math.round((base + variation * step) / step) * step)
+}
+
+function RouteMap({ from, to, target, onTargetChange, onSelectAirport }) {
+  const airportPositions = Object.fromEntries(ROUTE_MAP_AIRPORTS.map((airport) => [airport.code, airport]))
+  const origin = airportPositions[from]
+  const destination = airportPositions[to]
+  const routePath = origin && destination
+    ? `M ${origin.x} ${origin.y} Q ${(origin.x + destination.x) / 2} 42 ${destination.x} ${destination.y}`
+    : ''
+
+  return (
+    <section className="route-map-section" aria-labelledby="route-map-title">
+      <div className="route-map-copy">
+        <span className="eyebrow"><span className="eyebrow-line" />PICK YOUR NEXT ROUTE</span>
+        <h2 id="route-map-title">See where <span>you could go.</span></h2>
+        <p>Choose an origin or destination, then tap a city on the map. These are sample routes for the demo.</p>
+        <div className="route-map-targets" aria-label="Choose which part of the route to change">
+          <button className={target === 'from' ? 'selected' : ''} type="button" onClick={() => onTargetChange('from')}><small>FROM</small><strong>{AIRPORTS[from]?.city} <span>{from}</span></strong></button>
+          <Icon name="arrow" size={17} />
+          <button className={target === 'to' ? 'selected' : ''} type="button" onClick={() => onTargetChange('to')}><small>TO</small><strong>{AIRPORTS[to]?.city} <span>{to}</span></strong></button>
+        </div>
+        <button className="route-map-search" type="button" onClick={() => document.getElementById('flight-search')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}>Continue with this route <Icon name="arrow" size={16} /></button>
+      </div>
+      <div className="route-map-visual">
+        <svg viewBox="0 0 800 400" role="img" aria-label={`Interactive demo route map from ${AIRPORTS[from]?.city} to ${AIRPORTS[to]?.city}`}>
+          <defs><linearGradient id="route-line-gradient" x1="0" x2="1"><stop offset="0%" stopColor="#5cb6de" /><stop offset="100%" stopColor="#176bb0" /></linearGradient></defs>
+          <path className="map-continent map-europe" d="M152 95 201 69l48 13 25 29-17 28-40 8-18 29-31-8-23-32z" />
+          <path className="map-continent map-africa" d="m247 163 60 8 26 46-19 67-29 54-21-31-4-55-27-42z" />
+          <path className="map-continent map-asia" d="m316 115 89-42 93 17 43 36 81-1 79 47-31 40-77 1-38 50-70 12-46-31-58-14-24-49-47-20z" />
+          <path className="map-graticule" d="M70 200h660M400 38v324M180 75c90 85 90 165 0 250M620 75c-90 85-90 165 0 250" />
+          <path className="map-route-line" d={routePath} />
+          {origin && <circle className="map-route-glow" cx={origin.x} cy={origin.y} r="12" />}
+          {destination && <circle className="map-route-glow" cx={destination.x} cy={destination.y} r="12" />}
+          {ROUTE_MAP_AIRPORTS.map((airport) => {
+            const selected = airport.code === from || airport.code === to
+            return <g className={`map-airport ${selected ? 'selected' : ''}`} key={airport.code} role="button" tabIndex="0" aria-label={`Set ${target === 'from' ? 'origin' : 'destination'} to ${AIRPORTS[airport.code].city} (${airport.code})`} onClick={() => onSelectAirport(airport.code)} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onSelectAirport(airport.code) } }}>
+              <circle className="map-airport-hit" cx={airport.x} cy={airport.y} r="22" />
+              <circle className="map-airport-dot" cx={airport.x} cy={airport.y} r={selected ? 7 : 5} />
+              <text x={airport.x + 11} y={airport.y - 10}>{airport.code}</text>
+            </g>
+          })}
+        </svg>
+        <span className="route-map-note">SAMPLE NETWORK · NOT LIVE FLIGHT AVAILABILITY</span>
+      </div>
+    </section>
+  )
 }
 
 function TicketPass({ booking, onPrint, printTarget = false }) {
@@ -258,6 +325,8 @@ function App() {
   const [to, setTo] = useState(flowData.to || 'BOM')
   const [departDate, setDepartDate] = useState(flowData.departDate || '')
   const [returnDate, setReturnDate] = useState(flowData.returnDate || '')
+  const [fareWeekOffset, setFareWeekOffset] = useState(0)
+  const [mapTarget, setMapTarget] = useState('to')
   const [travelers, setTravelers] = useState(initialTravelerCount)
   const [tripType, setTripType] = useState(flowData.tripType || 'round-trip')
   const [cabin, setCabin] = useState(flowData.cabin || 'Economy')
@@ -299,6 +368,12 @@ function App() {
 
   const today = TODAY
   const currency = selectedFlight?.currency || getCurrency(from, to)
+  const fareDates = Array.from({ length: 7 }, (_, index) => {
+    const date = new Date(`${today}T12:00:00`)
+    date.setDate(date.getDate() + (fareWeekOffset * 7) + index)
+    return { date, key: dateKey(date), price: getDemoFares(from, to, getCurrency(from, to), date) }
+  })
+  const lowestFare = Math.min(...fareDates.map((fare) => fare.price))
   const serviceFee = currency === 'INR' ? 650 : 36
   const seatPrice = currency === 'INR' ? 399 : 6
   const baggage = BAGGAGE_OPTIONS.find((option) => option.id === baggageOption) || BAGGAGE_OPTIONS[0]
@@ -456,6 +531,22 @@ function App() {
   function swapAirports() {
     setFrom(to)
     setTo(from)
+  }
+
+  function chooseFareDate(date) {
+    setDepartDate(date)
+    if (returnDate && returnDate < date) setReturnDate(date)
+    setNotice('')
+  }
+
+  function selectMapAirport(code) {
+    if (mapTarget === 'from') {
+      if (code === to) setTo(from)
+      setFrom(code)
+      return
+    }
+    if (code === from) setFrom(to)
+    setTo(code)
   }
 
   function chooseFlight(flight) {
@@ -844,13 +935,38 @@ function App() {
                 </div>
                 <button className="search-button" type="submit"><span>Search flights</span><Icon name="arrow" size={18} /></button>
               </form>
+              <div className="fare-calendar" aria-label="Demo fares by departure date">
+                <div className="fare-calendar-heading">
+                  <span><strong>Flexible dates</strong><small>Sample one-way fares · {AIRPORTS[from]?.city} to {AIRPORTS[to]?.city}</small></span>
+                  <div className="fare-calendar-controls">
+                    <span>Week {fareWeekOffset + 1}</span>
+                    <button type="button" aria-label="Previous week" disabled={fareWeekOffset === 0} onClick={() => setFareWeekOffset((week) => Math.max(0, week - 1))}>‹</button>
+                    <button type="button" aria-label="Next week" onClick={() => setFareWeekOffset((week) => week + 1)}>›</button>
+                  </div>
+                </div>
+                <div className="fare-day-list">
+                  {fareDates.map((fare) => <button type="button" className={`fare-day ${departDate === fare.key ? 'selected' : ''} ${fare.price === lowestFare ? 'lowest' : ''}`} key={fare.key} onClick={() => chooseFareDate(fare.key)} aria-label={`${fare.date.toLocaleDateString('en-IN', { weekday: 'long', month: 'long', day: 'numeric' })}, sample fare ${formatMoney(fare.price, getCurrency(from, to))}`}>
+                    <span>{fare.date.toLocaleDateString('en-IN', { weekday: 'short' })}</span>
+                    <strong>{fare.date.getDate()}</strong>
+                    <b>{formatMoney(fare.price, getCurrency(from, to))}</b>
+                    {fare.price === lowestFare && <small>LOWEST</small>}
+                  </button>)}
+                </div>
+                <p className="fare-calendar-note">Demo prices only. Choosing a date updates your departure field.</p>
+              </div>
               {notice && <p className="inline-notice" role="alert">{notice}</p>}
             </section>
 
+            <RouteMap from={from} to={to} target={mapTarget} onTargetChange={setMapTarget} onSelectAirport={selectMapAirport} />
+
             <section className="destinations-section">
               <div className="section-heading">
-                <div><span className="eyebrow"><span className="eyebrow-line" />CURATED FLAGSHIP ROUTES</span><h2>Popular International &amp; <span>Domestic Destinations</span></h2></div>
-                <button className="text-link" onClick={() => document.getElementById('flight-search')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}>Explore All-India Demo Network <Icon name="arrow" size={17} /></button>
+                <div className="destination-heading-copy">
+                  <span className="eyebrow"><span className="eyebrow-line" />A FEW GOOD PLACES TO START</span>
+                  <h2>Big escapes. <span>Closer than you think.</span></h2>
+                  <p>From a quick coastal break to a city on the other side of the world, find a route that feels right.</p>
+                </div>
+                <button className="text-link" onClick={() => document.getElementById('flight-search')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}>Explore all routes <Icon name="arrow" size={17} /></button>
               </div>
               <div className="destination-grid">
                 {DESTINATIONS.map((destination) => {
@@ -875,6 +991,7 @@ function App() {
                 })}
               </div>
             </section>
+            <div className="home-lower-section">
             <section className="promo-section">
               <div className="promo-heading"><span>FESTIVE SEASON · WINTER 2026-27</span><h2>Celebrate the season with Skybound</h2></div>
               <p className="promo-disclaimer">Sample promo codes for the frontend demo only. They are illustrative and do not change booking prices.</p>
@@ -906,6 +1023,7 @@ function App() {
               </div>
             </section>
             <section className="bottom-promise"><div className="promise-icon"><Icon name="sparkle" size={20} /></div><p>Less planning, more <span>being there.</span></p><span>Great journeys start with a little curiosity.</span></section>
+            </div>
           </>
         )}
 
