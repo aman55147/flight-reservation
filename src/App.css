@@ -1558,3 +1558,87 @@ main > section { animation: page-enter .52s cubic-bezier(.2,.7,.25,1) both; }
 .site-footer .footer-bottom { border-top-color: rgba(223, 241, 249, .24); color: #cfdee7 !important; }
 .site-footer .footer-main div:not(.footer-about) > button:hover,
 .site-footer .footer-main div:not(.footer-about) > button:focus-visible { color: #86d5ef !important; }
+.site-footer { background: linear-gradient(115deg, #205777, #286b83 58%, #347c8a) !important; }
+
+/* Gentle motion for the homepage */
+@keyframes skybound-rise-in {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes skybound-fare-glow {
+  0%, 100% { box-shadow: 0 0 0 rgba(31, 132, 103, 0); }
+  50% { box-shadow: 0 5px 17px rgba(31, 132, 103, .15); }
+}
+.home-page .hero-copy { animation: skybound-rise-in .65s cubic-bezier(.2,.7,.25,1) both; }
+.home-page .hero-art { animation: skybound-rise-in .78s .1s cubic-bezier(.2,.7,.25,1) both; }
+.home-page .search-wrap { animation: skybound-rise-in .6s .12s cubic-bezier(.2,.7,.25,1) both; }
+.home-page .fare-calendar { animation: skybound-rise-in .55s .2s cubic-bezier(.2,.7,.25,1) both; }
+.home-page .route-map-section { animation: skybound-rise-in .65s .12s cubic-bezier(.2,.7,.25,1) both; }
+.home-page .destination-card,
+.home-page .promo-card,
+.home-page .benefits-grid article,
+.home-page .testimonials-grid article {
+  animation: skybound-rise-in .55s cubic-bezier(.2,.7,.25,1) both;
+  transition: transform .24s ease, box-shadow .24s ease, border-color .24s ease;
+}
+.home-page .destination-card:nth-child(2), .home-page .promo-card:nth-child(2), .home-page .benefits-grid article:nth-child(2), .home-page .testimonials-grid article:nth-child(2) { animation-delay: .08s; }
+.home-page .destination-card:nth-child(3), .home-page .promo-card:nth-child(3), .home-page .benefits-grid article:nth-child(3), .home-page .testimonials-grid article:nth-child(3) { animation-delay: .16s; }
+.home-page .destination-card:nth-child(4), .home-page .benefits-grid article:nth-child(4) { animation-delay: .24s; }
+.home-page .destination-card:hover,
+.home-page .promo-card:hover,
+.home-page .benefits-grid article:hover,
+.home-page .testimonials-grid article:hover { transform: translateY(-5px); box-shadow: 0 17px 34px rgba(18, 52, 78, .13); }
+.home-page .destination-image { transition: transform .45s cubic-bezier(.2,.7,.25,1); }
+.home-page .destination-card:hover .destination-image { transform: scale(1.035); }
+.home-page .fare-day.lowest:not(.selected) { animation: skybound-fare-glow 2.8s ease-in-out infinite; }
+.home-page .search-button,
+.home-page .pay-button,
+.home-page .route-map-search,
+.home-page .promo-code button,
+.home-page .footer-main button { transition: transform .2s ease, box-shadow .2s ease, color .2s ease, background-color .2s ease; }
+.home-page .search-button:hover,
+.home-page .pay-button:hover,
+.home-page .route-map-search:hover,
+.home-page .promo-code button:hover { transform: translateY(-2px); }
+.home-page .route-map-search:hover svg { transform: translateX(3px); }
+.home-page .route-map-search svg { transition: transform .2s ease; }
+@media (prefers-reduced-motion: reduce) {
+  .home-page .hero-copy,
+  .home-page .hero-art,
+  .home-page .search-wrap,
+  .home-page .fare-calendar,
+  .home-page .route-map-section,
+  .home-page .destination-card,
+  .home-page .promo-card,
+  .home-page .benefits-grid article,
+  .home-page .testimonials-grid article,
+  .home-page .fare-day.lowest:not(.selected) { animation: none !important; }
+  .home-page .destination-card,
+  .home-page .promo-card,
+  .home-page .benefits-grid article,
+  .home-page .testimonials-grid article,
+  .home-page .destination-image,
+  .home-page .search-button,
+  .home-page .pay-button,
+  .home-page .route-map-search,
+  .home-page .promo-code button { transition: none !important; }
+}
+.scroll-reveal-enabled .scroll-reveal:not(.scroll-visible) {
+  opacity: 0 !important;
+  transform: translateY(24px) !important;
+  animation: none !important;
+}
+.scroll-reveal-enabled .scroll-reveal {
+  transition: opacity .68s cubic-bezier(.2,.7,.25,1), transform .68s cubic-bezier(.2,.7,.25,1) !important;
+}
+.scroll-reveal-enabled .scroll-reveal.scroll-visible {
+  opacity: 1 !important;
+  transform: translateY(0) !important;
+}
+.scroll-reveal-enabled .destination-card.scroll-visible:hover,
+.scroll-reveal-enabled .promo-card.scroll-visible:hover,
+.scroll-reveal-enabled .benefits-grid article.scroll-visible:hover,
+.scroll-reveal-enabled .testimonials-grid article.scroll-visible:hover { transform: translateY(-5px) !important; }
+@media (prefers-reduced-motion: reduce) {
+  .scroll-reveal-enabled .scroll-reveal { opacity: 1 !important; transform: none !important; transition: none !important; }
+}

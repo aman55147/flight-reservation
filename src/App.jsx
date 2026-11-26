@@ -412,6 +412,38 @@ function App() {
     : bookings.filter((booking) => bookingLookupIds.includes(booking.id))
 
   useEffect(() => {
+    if (page !== 'home' || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return undefined
+
+    const revealTargets = document.querySelectorAll(
+      '.home-page .hero-copy, .home-page .hero-art, .home-page .search-wrap, .home-page .fare-calendar, .home-page .route-map-section, .home-page .destination-card, .home-page .promo-section, .home-page .promo-card, .home-page .benefits-section, .home-page .benefits-grid article, .home-page .testimonials-section, .home-page .testimonials-grid article, .home-page .bottom-promise, .home-page .site-footer',
+    )
+    if (!revealTargets.length) return undefined
+
+    revealTargets.forEach((element) => element.classList.add('scroll-reveal'))
+    document.documentElement.classList.add('scroll-reveal-enabled')
+
+    if (!('IntersectionObserver' in window)) {
+      revealTargets.forEach((element) => element.classList.add('scroll-visible'))
+      return () => document.documentElement.classList.remove('scroll-reveal-enabled')
+    }
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return
+        entry.target.classList.add('scroll-visible')
+        observer.unobserve(entry.target)
+      })
+    }, { threshold: 0.12, rootMargin: '0px 0px -35px 0px' })
+
+    revealTargets.forEach((element) => observer.observe(element))
+    return () => {
+      observer.disconnect()
+      document.documentElement.classList.remove('scroll-reveal-enabled')
+      revealTargets.forEach((element) => element.classList.remove('scroll-reveal', 'scroll-visible'))
+    }
+  }, [page])
+
+  useEffect(() => {
     const syncRoute = () => {
       window.clearTimeout(navigationTimer.current)
       navigationTimer.current = null
