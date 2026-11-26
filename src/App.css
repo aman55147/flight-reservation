@@ -1642,3 +1642,160 @@ main > section { animation: page-enter .52s cubic-bezier(.2,.7,.25,1) both; }
 @media (prefers-reduced-motion: reduce) {
   .scroll-reveal-enabled .scroll-reveal { opacity: 1 !important; transform: none !important; transition: none !important; }
 }
+
+/* Trip dashboard, saved demo alerts, theme and walkthrough */
+.skip-link { position: fixed; z-index: 10001; top: 10px; left: 10px; transform: translateY(-160%); padding: 11px 15px; border-radius: 8px; background: #fff; color: #102a45; font-size: 14px; font-weight: 800; box-shadow: 0 8px 24px rgba(0,0,0,.2); }
+.skip-link:focus { transform: translateY(0); }
+.theme-toggle { display: inline-flex; align-items: center; gap: 7px; padding: 9px 11px; border: 1px solid rgba(255,255,255,.2); border-radius: 24px; background: rgba(255,255,255,.08); color: #f5fbff; font-size: 11px; font-weight: 700; cursor: pointer; }
+.theme-toggle:hover { background: rgba(255,255,255,.16); }
+.hero-tour-button { display: inline-flex; align-items: center; gap: 9px; margin-top: 20px; padding: 11px 15px; border: 1px solid rgba(255,255,255,.34); border-radius: 9px; background: rgba(255,255,255,.1); color: #fff; font-size: 12px; font-weight: 800; cursor: pointer; transition: background .2s, transform .2s; }
+.hero-tour-button:hover { transform: translateY(-2px); background: rgba(255,255,255,.18); }
+.fare-calendar-heading { flex-wrap: wrap; }
+.fare-alert-toggle { display: inline-flex; align-items: center; gap: 6px; margin-top: 11px; padding: 8px 11px; border: 1px solid #bbd9e8; border-radius: 8px; background: #eff8fc; color: #17618c; font-size: 10px; font-weight: 800; cursor: pointer; }
+.fare-alert-toggle[aria-pressed="true"] { border-color: #acd8c4; background: #eef9f3; color: #176a4c; }
+.fare-alert-list { display: grid; gap: 8px; margin-top: 12px; padding: 12px; border: 1px solid #e1ebf0; border-radius: 10px; background: rgba(255,255,255,.78); }
+.fare-alert-list > strong { color: #26415a; font-size: 11px; }
+.fare-alert-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 8px; border-top: 1px solid #e8eff3; color: #29435a; font-size: 11px; font-weight: 700; }
+.fare-alert-item span { display: grid; gap: 3px; }
+.fare-alert-item small { color: #708499; font-size: 9px; font-weight: 500; }
+.fare-alert-item button { border: 0; background: transparent; color: #a24b4b; font-size: 10px; font-weight: 800; cursor: pointer; }
+.fare-alert-list > p, .fare-alert-feedback { margin: 2px 0 0; color: #718398; font-size: 9px; line-height: 1.5; }
+.booking-progress { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; max-width: 800px; margin: 22px auto 34px; padding: 0; list-style: none; }
+.booking-progress li { position: relative; display: grid; justify-items: center; gap: 8px; color: #8b9baa; text-align: center; }
+.booking-progress li::before { position: absolute; z-index: 0; top: 17px; left: -50%; width: 100%; height: 2px; background: #e0e7ec; content: ''; }
+.booking-progress li:first-child::before { display: none; }
+.booking-progress li > span { z-index: 1; width: 34px; height: 34px; display: grid; place-items: center; border: 2px solid #d9e2e8; border-radius: 50%; background: #fff; color: #788999; font-size: 12px; font-weight: 800; }
+.booking-progress li strong { font-size: 11px; }
+.booking-progress li.complete, .booking-progress li.current { color: #17618c; }
+.booking-progress li.complete > span, .booking-progress li.current > span { border-color: #297da4; background: #e9f5fa; color: #155f83; }
+.booking-progress li.complete::before { background: #63a9c4; }
+.booking-progress li.current strong { color: #123b57; }
+.trip-tabs { display: flex; flex-wrap: wrap; gap: 9px; margin: 24px 0 18px; padding-bottom: 12px; border-bottom: 1px solid #e5ebee; }
+.trip-tabs button { display: inline-flex; align-items: center; gap: 8px; padding: 9px 13px; border: 1px solid #dfe7ec; border-radius: 24px; background: #fff; color: #617387; font-size: 11px; font-weight: 800; cursor: pointer; }
+.trip-tabs button span { min-width: 21px; padding: 3px 6px; border-radius: 15px; background: #eef3f6; color: #546b80; font-size: 9px; text-align: center; }
+.trip-tabs button.selected { border-color: #8dbbd0; background: #edf7fa; color: #155f83; }
+.trip-tabs button.selected span { background: #d7edf4; color: #155f83; }
+.walkthrough-backdrop { position: fixed; z-index: 10000; inset: 0; display: grid; place-items: center; padding: 20px; background: rgba(8, 24, 39, .62); backdrop-filter: blur(5px); }
+.walkthrough-dialog { position: relative; width: min(100%, 520px); padding: clamp(25px, 5vw, 42px); border: 1px solid #dce8ee; border-radius: 20px; background: #fff; box-shadow: 0 28px 80px rgba(4, 24, 40, .3); color: #17324b; }
+.walkthrough-dialog > .eyebrow { color: #26759a; font-size: 10px; letter-spacing: 1px; }
+.walkthrough-close { position: absolute; top: 16px; right: 16px; width: 38px; height: 38px; display: grid; place-items: center; border: 1px solid #e2eaf0; border-radius: 50%; background: #f8fbfc; color: #34556e; cursor: pointer; }
+.walkthrough-progress { display: flex; gap: 7px; margin: 25px 0 22px; }
+.walkthrough-progress i { height: 4px; flex: 1; border-radius: 4px; background: #e5edf2; }
+.walkthrough-progress i.active { background: #2f8ab0; }
+.walkthrough-dialog h2 { margin: 0 0 12px; color: #153650; font: 800 clamp(25px, 5vw, 34px)/1.15 'Manrope', sans-serif; letter-spacing: -.7px; }
+.walkthrough-dialog > p { min-height: 76px; margin: 0; color: #5d7287; font-size: 15px; line-height: 1.7; }
+.walkthrough-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 24px; }
+.walkthrough-actions .pay-button { width: auto; min-width: 120px; }
+.walkthrough-back { padding: 10px 13px; border: 1px solid #dfe8ed; border-radius: 8px; background: #fff; color: #4d6578; font-size: 12px; font-weight: 800; cursor: pointer; }
+.walkthrough-back:disabled { opacity: .45; cursor: default; }
+
+/* Accessible dark theme */
+html[data-theme="dark"], html[data-theme="dark"] body { background: #101b29; color: #e5edf4; }
+.app-shell.dark-theme { color: #e5edf4; background: radial-gradient(ellipse at 8% 25%, rgba(34, 83, 112, .2), transparent 30%), #101b29 !important; }
+.dark-theme .site-header { background: #0d2235; }
+.dark-theme .destinations-section,
+.dark-theme .route-map-section,
+.dark-theme .fare-calendar,
+.dark-theme .search-wrap,
+.dark-theme .inner-page,
+.dark-theme .booking-summary,
+.dark-theme .checkout-form,
+.dark-theme .results-aside,
+.dark-theme .feature-grid article,
+.dark-theme .contact-details,
+.dark-theme .help-contact,
+.dark-theme .booking-lookup,
+.dark-theme .saved-booking,
+.dark-theme .confirmation-card,
+.dark-theme .admin-table-wrap { border-color: #2b4053; background: #17283a; color: #e1ebf2; }
+.dark-theme .promo-section { background: linear-gradient(135deg, #142536, #182b3c) !important; }
+.dark-theme .benefits-section { background: linear-gradient(110deg, #192c3d, #172839) !important; }
+.dark-theme .testimonials-section { background: linear-gradient(135deg, #142536, #1a2c3b) !important; }
+.dark-theme .benefits-grid article,
+.dark-theme .testimonials-grid article,
+.dark-theme .promo-grid article,
+.dark-theme .fare-alert-list { border-color: #354a5e; background: #1d3043; }
+.dark-theme .promo-heading h2,
+.dark-theme .benefits-grid h3,
+.dark-theme .testimonials-grid strong,
+.dark-theme .section-heading h2,
+.dark-theme .destination-info strong,
+.dark-theme .route-map-copy h2,
+.dark-theme .walkthrough-dialog h2 { color: #f0f6fa; }
+.dark-theme .promo-grid p,
+.dark-theme .benefits-grid p,
+.dark-theme .testimonials-grid p,
+.dark-theme .bookings-intro,
+.dark-theme .destination-heading-copy p { color: #b6c6d2; }
+.dark-theme .saved-booking,
+.dark-theme .saved-itinerary-leg,
+.dark-theme .trip-tabs button,
+.dark-theme .fare-day,
+.dark-theme .fare-alert-item,
+.dark-theme .walkthrough-dialog { border-color: #344a5e; background: #1b2d40; color: #e4edf4; }
+.dark-theme .trip-tabs button.selected,
+.dark-theme .fare-day.selected { border-color: #6db1ce; background: #203f54; color: #eaf6fb; }
+.dark-theme .trip-tabs button span { background: #2a4054; color: #d1e1ec; }
+.dark-theme .fare-calendar-heading strong,
+.dark-theme .fare-day > strong,
+.dark-theme .fare-alert-list > strong,
+.dark-theme .fare-alert-item { color: #e5eef5; }
+.dark-theme .fare-day { background: #1c2f42; }
+.dark-theme .fare-day.lowest { background: #1c3a38; }
+.dark-theme .bottom-promise { background: linear-gradient(110deg, #1b3448, #223c4c) !important; }
+.dark-theme .bottom-promise p { color: #e2edf4; }
+.dark-theme .field-control input,
+.dark-theme .field-control select,
+.dark-theme .form-control,
+.dark-theme .form-select,
+.dark-theme .flight-filters select,
+.dark-theme .results-toolbar select { border-color: #40566a; background-color: #122337; color: #edf4f8; }
+.dark-theme .search-field,
+.dark-theme .trip-choice-card,
+.dark-theme .seat-button,
+.dark-theme .passenger-tab,
+.dark-theme .seat-leg-tabs button,
+.dark-theme .payment-method { border-color: #354b5e; background: #1b2e40; color: #d8e4ed; }
+.dark-theme .flight-card,
+.dark-theme .flight-filters,
+.dark-theme .no-flights,
+.dark-theme .summary-leg,
+.dark-theme .payment-panel { border-color: #34495b; background: #172a3c; }
+.dark-theme .flight-airline strong,
+.dark-theme .flight-times strong,
+.dark-theme .summary-route strong,
+.dark-theme .summary-route b,
+.dark-theme .form-field,
+.dark-theme .checkout-section-title h2,
+.dark-theme .inner-page h1,
+.dark-theme .inner-page h2 { color: #edf4f8; }
+.dark-theme .flight-airline span,
+.dark-theme .field-label,
+.dark-theme .field-sub,
+.dark-theme .summary-footnote,
+.dark-theme .summary-leg-label,
+.dark-theme .payment-panel-hint { color: #adbfcc; }
+.dark-theme .booking-progress li > span { border-color: #42596c; background: #1b2c3e; color: #c4d3de; }
+.dark-theme .booking-progress li.complete > span,
+.dark-theme .booking-progress li.current > span { border-color: #6ab0cd; background: #21445a; color: #e4f4fa; }
+.dark-theme .trip-tabs,
+.dark-theme .booking-progress li::before { border-color: #34495b; }
+.dark-theme .walkthrough-dialog > p { color: #c0ced8; }
+.dark-theme .walkthrough-close,
+.dark-theme .walkthrough-back { border-color: #3b5063; background: #203447; color: #e1eaf1; }
+.dark-theme .skip-link { background: #fff; color: #102a45; }
+.dark-theme :focus-visible { outline-color: #ffd18e; }
+
+@media (max-width: 760px) {
+  .theme-toggle { padding: 8px; }
+  .theme-toggle span { display: none; }
+  .booking-progress { margin: 20px 0 27px; }
+  .booking-progress li strong { font-size: 9px; }
+  .booking-progress li > span { width: 30px; height: 30px; }
+  .booking-progress li::before { top: 15px; }
+  .trip-tabs { gap: 6px; }
+  .trip-tabs button { padding: 8px 10px; font-size: 10px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-tour-button { transition: none; }
+}

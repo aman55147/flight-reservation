@@ -34,7 +34,15 @@ const FLIGHTS = [
 
 const STORAGE_KEY = 'skyvoyage-bookings'
 const FLOW_STORAGE_KEY = 'skyvoyage-search-flow'
+const FARE_ALERTS_KEY = 'skyvoyage-fare-alerts'
+const THEME_KEY = 'skyvoyage-theme'
 const DEMO_ORDER_ID = 'SV-DEMO-ONLY'
+const DEMO_TOUR_STEPS = [
+  { title: 'Choose a route and date', text: 'Pick your cities, trip dates, travelers, and cabin. The flexible fare strip highlights the lowest sample fare of the week.' },
+  { title: 'Compare sample flights', text: 'Use the flight filters to compare airlines, departure times, stops, and demo prices before choosing a flight.' },
+  { title: 'Make the trip yours', text: 'Add traveler details, choose seats and meals, and review the full itinerary in the simulated checkout.' },
+  { title: 'Save your demo trip', text: 'Your confirmation and PNR are stored only in this browser. No airline is contacted and no real payment is taken.' },
+]
 const ROUTES = {
   home: '#/explore',
   results: '#/flights',
@@ -127,6 +135,38 @@ function readStoredBookings() {
   } catch (error) {
     return { bookings: [], error: `We couldn't load saved bookings: ${error.message}` }
   }
+}
+
+function readStoredFareAlerts() {
+  try {
+    const stored = window.localStorage.getItem(FARE_ALERTS_KEY)
+    const parsed = stored ? JSON.parse(stored) : []
+    return Array.isArray(parsed) ? parsed : []
+  } catch {
+    return []
+  }
+}
+
+function readStoredTheme() {
+  try {
+    return window.localStorage.getItem(THEME_KEY) === 'dark' ? 'dark' : 'light'
+  } catch {
+    return 'light'
+  }
+}
+
+function getBookingCategory(booking) {
+  if (booking.status === 'Cancelled') return 'cancelled'
+  return booking.date < TODAY ? 'completed' : 'upcoming'
+}
+
+function BookingProgress({ activeStep }) {
+  const steps = ['Search', 'Flight', 'Details', 'Confirmation']
+  return <ol className="booking-progress" aria-label="Booking progress">{steps.map((label, index) => (
+    <li className={index < activeStep ? 'complete' : index === activeStep ? 'current' : ''} key={label} aria-current={index === activeStep ? 'step' : undefined}>
+      <span aria-hidden="true">{index < activeStep ? '✓' : index + 1}</span><strong>{label}</strong>
+    </li>
+  ))}</ol>
 }
 
 function Icon({ name, size = 18, className = '' }) {
@@ -365,6 +405,13 @@ function App() {
   const [printTicketId, setPrintTicketId] = useState('')
   const [copiedPromoCode, setCopiedPromoCode] = useState('')
   const [promoFeedback, setPromoFeedback] = useState('')
+  const [theme, setTheme] = useState(readStoredTheme)
+  const [fareAlerts, setFareAlerts] = useState(readStoredFareAlerts)
+  const [fareAlertFeedback, setFareAlertFeedback] = useState('')
+  const [bookingTab, setBookingTab] = useState('upcoming')
+  const [walkthroughOpen, setWalkthroughOpen] = useState(false)
+  const [walkthroughStep, setWalkthroughStep] = useState(0)
+  const walkthroughTriggerRef = useRef(null)
 
   const today = TODAY
   const currency = selectedFlight?.currency || getCurrency(from, to)
@@ -407,9 +454,61 @@ function App() {
   const activePassenger = passengers[activePassengerIndex] || passengers[0] || {}
   const currentSeatField = seatLeg === 'return' ? 'returnSeat' : 'outboundSeat'
   const assignedSeats = passengers.map((passenger, index) => index === activePassengerIndex ? '' : passenger[currentSeatField]).filter(Boolean)
-  const visibleBookings = bookingLookupIds === null
+  const matchingBookings = bookingLookupIds === null
     ? bookings
     : bookings.filter((booking) => bookingLookupIds.includes(booking.id))
+  const bookingCounts = {
+    upcoming: matchingBookings.filter((booking) => getBookingCategory(booking) === 'upcoming').length,
+    completed: matchingBookings.filter((booking) => getBookingCategory(booking) === 'completed').length,
+    cancelled: matchingBookings.filter((booking) => getBookingCategory(booking) === 'cancelled').length,
+    all: matchingBookings.length,
+  }
+  const visibleBookings = bookingTab === 'all'
+    ? matchingBookings
+    : matchingBookings.filter((booking) => getBookingCategory(booking) === bookingTab)
+  const currentFareAlertId = `${from}-${to}`
+  const hasCurrentFareAlert = fareAlerts.some((alert) => alert.id === currentFareAlertId)
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme
+    try { window.localStorage.setItem(THEME_KEY, theme) } catch { /* Theme still applies for this session. */ }
+  }, [theme])
+
+  useEffect(() => {
+    if (!walkthroughOpen) return undefined
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    document.getElementById('demo-walkthrough-title')?.focus()
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        setWalkthroughOpen(false)
+        walkthroughTriggerRef.current?.focus()
+        return
+      }
+      if (event.key === 'Tab') {
+        const dialog = document.querySelector('.walkthrough-dialog')
+        const focusable = dialog?.querySelectorAll('button:not(:disabled), [href], [tabindex]:not([tabindex="-1"])')
+        if (!focusable?.length) return
+        const first = focusable[0]
+        const last = focusable[focusable.length - 1]
+        if (!dialog.contains(document.activeElement)) {
+          event.preventDefault()
+          first.focus()
+        } else if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault()
+          last.focus()
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault()
+          first.focus()
+        }
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.body.style.overflow = previousOverflow
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [walkthroughOpen])
 
   useEffect(() => {
     if (page !== 'home' || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return undefined
@@ -752,6 +851,7 @@ function App() {
     setBookingLookupIds(null)
     setBookingLookup({ pnr: '', email: '' })
     setCheckInError('')
+    setBookingTab('upcoming')
     navigateTo('bookings')
     setNotice('')
   }
@@ -763,7 +863,45 @@ function App() {
     const email = bookingLookup.email.trim().toLowerCase()
     const matches = bookings.filter((booking) => booking.id.toLowerCase() === pnr && (booking.email || '').trim().toLowerCase() === email)
     setBookingLookupIds(matches.map((booking) => booking.id))
+    if (matches.length) setBookingTab('all')
     if (!matches.length) setCheckInError('No booking matched that PNR and email in this browser.')
+  }
+
+  function toggleFareAlert() {
+    const nextAlerts = hasCurrentFareAlert
+      ? fareAlerts.filter((alert) => alert.id !== currentFareAlertId)
+      : [{ id: currentFareAlertId, from, to, currency: getCurrency(from, to), lowestFare, createdAt: new Date().toISOString() }, ...fareAlerts]
+    try {
+      window.localStorage.setItem(FARE_ALERTS_KEY, JSON.stringify(nextAlerts))
+      setFareAlerts(nextAlerts)
+      setFareAlertFeedback(hasCurrentFareAlert
+        ? `Fare watch removed for ${AIRPORTS[from]?.city} to ${AIRPORTS[to]?.city}.`
+        : `Fare watch saved for ${AIRPORTS[from]?.city} to ${AIRPORTS[to]?.city}. This demo won't send live notifications.`)
+    } catch (error) {
+      setFareAlertFeedback(`Couldn't save this fare watch in this browser: ${error.message}`)
+    }
+  }
+
+  function removeFareAlert(alertId) {
+    const nextAlerts = fareAlerts.filter((alert) => alert.id !== alertId)
+    try {
+      window.localStorage.setItem(FARE_ALERTS_KEY, JSON.stringify(nextAlerts))
+      setFareAlerts(nextAlerts)
+      setFareAlertFeedback('Fare watch removed.')
+    } catch (error) {
+      setFareAlertFeedback(`Couldn't update your fare watches: ${error.message}`)
+    }
+  }
+
+  function startDemoWalkthrough(event) {
+    walkthroughTriggerRef.current = event.currentTarget
+    setWalkthroughStep(0)
+    setWalkthroughOpen(true)
+  }
+
+  function closeDemoWalkthrough() {
+    setWalkthroughOpen(false)
+    window.setTimeout(() => walkthroughTriggerRef.current?.focus(), 0)
   }
 
   function checkInBooking(bookingId) {
@@ -848,7 +986,8 @@ function App() {
   }))
 
   return (
-    <div className={`app-shell container-fluid ${page === 'home' ? 'home-page' : ''} ${printTicketId ? 'print-ticket-mode' : ''}`}>
+    <div className={`app-shell container-fluid ${page === 'home' ? 'home-page' : ''} ${printTicketId ? 'print-ticket-mode' : ''} ${theme === 'dark' ? 'dark-theme' : ''}`}>
+      <a className="skip-link" href="#main-content">Skip to main content</a>
       {storageError && <div className="storage-alert" role="alert">{storageError}</div>}
       <div className="demo-banner">
         <strong>ACADEMIC DEMO MODE</strong>
@@ -871,6 +1010,9 @@ function App() {
           <a className={`nav-link admin-link ${page === 'admin' ? 'active' : ''}`} href={ROUTES.admin} onClick={(event) => { event.preventDefault(); navigateTo('admin') }} aria-current={page === 'admin' ? 'page' : undefined}>Admin</a>
           <a className={`nav-link help-link ${page === 'help' ? 'active' : ''}`} href={ROUTES.help} onClick={(event) => { event.preventDefault(); navigateTo('help') }}>Help</a>
         </nav>
+        <button className="theme-toggle" type="button" aria-pressed={theme === 'dark'} aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'} onClick={() => setTheme((current) => current === 'dark' ? 'light' : 'dark')}>
+          <Icon name="sparkle" size={16} /><span>{theme === 'dark' ? 'Light mode' : 'Dark mode'}</span>
+        </button>
         <a className="profile-button" href={ROUTES.bookings} onClick={(event) => { event.preventDefault(); openBookings() }}><span className="profile-avatar">J</span><span>My trips</span><Icon name="chevron" size={15} /></a>
       </header>
 
@@ -885,7 +1027,7 @@ function App() {
         </div>
       )}
 
-      <main aria-busy={Boolean(loadingPage)}>
+      <main id="main-content" tabIndex={-1} aria-busy={Boolean(loadingPage)}>
         {page === 'home' && (
           <>
             <section className="hero-section">
@@ -899,6 +1041,7 @@ function App() {
                   <div><strong>Your way</strong><span>One-way or return</span></div>
                   <div><strong>Zero charge</strong><span>Safe demo checkout</span></div>
                 </div>
+                <button className="hero-tour-button" type="button" onClick={startDemoWalkthrough}>Try a sample booking <Icon name="arrow" size={16} /></button>
               </div>
               <div className="hero-art" aria-label="Illustration of an airplane flying toward the sunset over a mountain landscape">
                 <div className="aceternity-spotlight" aria-hidden="true" />
@@ -985,6 +1128,16 @@ function App() {
                   </button>)}
                 </div>
                 <p className="fare-calendar-note">Demo prices only. Choosing a date updates your departure field.</p>
+                <button className="fare-alert-toggle" type="button" aria-pressed={hasCurrentFareAlert} onClick={toggleFareAlert}>{hasCurrentFareAlert ? '✓ Fare watch saved' : '＋ Save fare watch'}</button>
+                {fareAlerts.length > 0 && <div className="fare-alert-list" aria-label="Saved demo fare watches">
+                  <strong>Saved fare watches</strong>
+                  {fareAlerts.map((alert) => <div className="fare-alert-item" key={alert.id}>
+                    <span>{AIRPORTS[alert.from]?.city || alert.from} → {AIRPORTS[alert.to]?.city || alert.to}<small>Sample low from {formatMoney(alert.lowestFare, alert.currency)}</small></span>
+                    <button type="button" aria-label={`Remove ${alert.from} to ${alert.to} fare watch`} onClick={() => removeFareAlert(alert.id)}>Remove</button>
+                  </div>)}
+                  <p>Saved in this browser only. Live price alerts are not sent.</p>
+                </div>}
+                {fareAlertFeedback && <p className="fare-alert-feedback" role="status" aria-live="polite">{fareAlertFeedback}</p>}
               </div>
               {notice && <p className="inline-notice" role="alert">{notice}</p>}
             </section>
@@ -1122,6 +1275,7 @@ function App() {
         {page === 'checkout' && selectedFlight && (
           <section className="inner-page checkout-page">
             <button className="back-link" onClick={() => { if (tripType === 'round-trip') { setActiveLeg('return'); setSelectedReturnFlight(null) } navigateTo('results') }}>← Back to flights</button>
+            <BookingProgress activeStep={2} />
             <div className="checkout-heading"><span className="eyebrow"><span className="eyebrow-line" />ALMOST THERE</span><h1>Make it <span>official.</span></h1><p>Your next favorite story is just a few details away.</p></div>
             <div className="checkout-layout">
               <form className="checkout-form" onSubmit={completeBooking}>
@@ -1275,6 +1429,7 @@ function App() {
         {page === 'confirmation' && (
           <section className="inner-page confirmation-page">
             <div className="confirmation-card ticket-confirmation-card">
+              <BookingProgress activeStep={3} />
               <span className="confirmation-check"><Icon name="check" size={28} /></span>
               <span className="eyebrow">IT'S REALLY HAPPENING</span>
               <h1>You're going <span>places.</span></h1>
@@ -1290,13 +1445,16 @@ function App() {
           <section className="inner-page bookings-page">
             <span className="eyebrow"><span className="eyebrow-line" />YOUR TRAVEL JOURNAL</span>
             <h1>My <span>bookings.</span></h1>
-            <p className="bookings-intro">Find a saved trip with its PNR and contact email, then view its demo ticket or status.</p>
+            <p className="bookings-intro">Browse upcoming, completed, and cancelled demo trips saved in this browser. Search by PNR if you need one specific booking.</p>
             {notice && <p className="inline-notice" role="alert">{notice}</p>}
+            <div className="trip-tabs" role="tablist" aria-label="Filter trips by status">
+              {[['upcoming', 'Upcoming'], ['completed', 'Completed'], ['cancelled', 'Cancelled'], ['all', 'All trips']].map(([id, label]) => <button key={id} type="button" role="tab" aria-selected={bookingTab === id} className={bookingTab === id ? 'selected' : ''} onClick={() => setBookingTab(id)}>{label}<span>{bookingCounts[id]}</span></button>)}
+            </div>
             <form className="booking-lookup" onSubmit={lookupBookings}>
               <label className="form-field">PNR / booking reference<input className="form-control" required value={bookingLookup.pnr} onChange={(event) => setBookingLookup({ ...bookingLookup, pnr: event.target.value })} placeholder="e.g. SV12345678" /></label>
               <label className="form-field">Contact email<input className="form-control" required type="email" value={bookingLookup.email} onChange={(event) => setBookingLookup({ ...bookingLookup, email: event.target.value })} placeholder="Email used at checkout" /></label>
               <button className="pay-button" type="submit">Find booking <Icon name="arrow" size={17} /></button>
-              {bookingLookupIds !== null && <button className="clear-lookup" type="button" onClick={() => { setBookingLookupIds(null); setBookingLookup({ pnr: '', email: '' }); setCheckInError('') }}>Show all saved bookings</button>}
+              {bookingLookupIds !== null && <button className="clear-lookup" type="button" onClick={() => { setBookingLookupIds(null); setBookingLookup({ pnr: '', email: '' }); setCheckInError(''); setBookingTab('upcoming') }}>Show all saved bookings</button>}
             </form>
             {checkInError && <p className="inline-notice" role="alert">{checkInError}</p>}
             {visibleBookings.length ? <div className="saved-bookings">{visibleBookings.map((booking) => <article className="saved-booking" key={booking.id}>
@@ -1320,9 +1478,11 @@ function App() {
                 {booking.status !== 'Cancelled' && booking.checkInStatus !== 'Checked in' && <button type="button" onClick={() => checkInBooking(booking.id)}>Demo check-in</button>}
                 {booking.status !== 'Cancelled' && <button type="button" className="cancel-button" onClick={() => cancelBooking(booking.id)}>Cancel demo booking</button>}
               </div>
-            </article>)}</div> : bookingLookupIds !== null
+              </article>)}</div> : bookingLookupIds !== null
               ? <div className="empty-bookings"><span className="empty-icon"><Icon name="pin" size={25} /></span><h2>No matching booking</h2><p>Check that the PNR and checkout email match a booking saved in this browser.</p></div>
-              : <div className="empty-bookings"><span className="empty-icon"><Icon name="plane" size={25} /></span><h2>No trips on the horizon. Yet.</h2><p>Your booked flights will find a home here. Where will you go first?</p><button className="pay-button" onClick={goHome}>Find your next flight <Icon name="arrow" size={18} /></button></div>}
+              : matchingBookings.length
+                ? <div className="empty-bookings"><span className="empty-icon"><Icon name="plane" size={25} /></span><h2>No {bookingTab} trips here.</h2><p>Try another trip tab to see the bookings saved in this browser.</p></div>
+                : <div className="empty-bookings"><span className="empty-icon"><Icon name="plane" size={25} /></span><h2>No trips on the horizon. Yet.</h2><p>Your booked flights will find a home here. Where will you go first?</p><button className="pay-button" onClick={goHome}>Find your next flight <Icon name="arrow" size={18} /></button></div>}
           </section>
         )}
 
@@ -1415,6 +1575,22 @@ function App() {
           </section>
         )}
       </main>
+
+      {walkthroughOpen && <div className="walkthrough-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) closeDemoWalkthrough() }}>
+        <section className="walkthrough-dialog" role="dialog" aria-modal="true" aria-labelledby="demo-walkthrough-title" aria-describedby="demo-walkthrough-copy">
+          <button className="walkthrough-close" type="button" aria-label="Close booking walkthrough" onClick={closeDemoWalkthrough}><Icon name="close" size={20} /></button>
+          <span className="eyebrow"><span className="eyebrow-line" />A QUICK LOOK · STEP {walkthroughStep + 1} OF {DEMO_TOUR_STEPS.length}</span>
+          <div className="walkthrough-progress" aria-hidden="true">{DEMO_TOUR_STEPS.map((step, index) => <i className={index <= walkthroughStep ? 'active' : ''} key={step.title} />)}</div>
+          <h2 id="demo-walkthrough-title" tabIndex={-1}>{DEMO_TOUR_STEPS[walkthroughStep].title}</h2>
+          <p id="demo-walkthrough-copy">{DEMO_TOUR_STEPS[walkthroughStep].text}</p>
+          <div className="walkthrough-actions">
+            <button className="walkthrough-back" type="button" onClick={() => setWalkthroughStep((step) => Math.max(0, step - 1))} disabled={walkthroughStep === 0}>Back</button>
+            {walkthroughStep < DEMO_TOUR_STEPS.length - 1
+              ? <button className="pay-button" type="button" onClick={() => setWalkthroughStep((step) => step + 1)}>Next <Icon name="arrow" size={17} /></button>
+              : <button className="pay-button" type="button" onClick={() => { closeDemoWalkthrough(); window.setTimeout(() => document.getElementById('flight-search')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 0) }}>Start exploring <Icon name="arrow" size={17} /></button>}
+          </div>
+        </section>
+      </div>}
 
       <footer className="site-footer">
         <div className="footer-main">
