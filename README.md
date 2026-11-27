@@ -22,6 +22,6 @@ Create a production build with `npm run build`, or run the project linter with `
 - Open **Help** for answers about searching, demo checkout, and locally saved bookings.
 - Keep booking data in this browser under `localStorage` key `skyvoyage-bookings`.
 - Navigate Explore, flight results, checkout, confirmation, bookings, and Help with browser-addressable hash routes. The current search can be refreshed in the same tab.
-- Copy illustrative seasonal promo codes; they do not change booking prices.
+- Apply seasonal demo promo codes to the sample flight fare at checkout.
 
-Flight schedules and fares are sample data, not live availability or exchange-rate conversions. This frontend demo has no backend, real email/WhatsApp notifications, or payment processing. The QR code is a demo reference only, not a payment or boarding code. Payment details are not saved; do not enter real payment details.
+Flight schedules, fares, cabin multipliers, age-based fares, and promo discounts are sample data, not live availability, airline policy, or exchange-rate conversions. This frontend demo has no backend, real email/WhatsApp notifications, or payment processing. The QR code is a demo reference only, not a payment or boarding code. Payment details are not saved; do not enter real payment details. The Admin page and Contact details are illustrative and local to this demo.

@@ -83,6 +83,41 @@ function formatMoney(amount, currency = 'USD') {
   }).format(amount)
 }
 
+function getAgeOnDate(dateOfBirth, travelDate) {
+  if (!dateOfBirth || !travelDate) return null
+  const birth = new Date(`${dateOfBirth}T00:00:00`)
+  const travel = new Date(`${travelDate}T00:00:00`)
+  if (Number.isNaN(birth.getTime()) || Number.isNaN(travel.getTime()) || birth > travel) return null
+  let age = travel.getFullYear() - birth.getFullYear()
+  const beforeBirthday = travel.getMonth() < birth.getMonth() || (travel.getMonth() === birth.getMonth() && travel.getDate() < birth.getDate())
+  if (beforeBirthday) age -= 1
+  return age
+}
+
+function passengerTypeForAge(age) {
+  if (age === null) return 'adult'
+  if (age < 2) return 'infant'
+  if (age < 12) return 'child'
+  return 'adult'
+}
+
+function passengerFareMultiplier(type) {
+  return type === 'infant' ? 0.1 : type === 'child' ? 0.5 : 1
+}
+
+function cabinFareMultiplier(cabin) {
+  return cabin === 'First Class' ? 3.2 : cabin === 'Business' ? 2.1 : cabin === 'Premium Economy' ? 1.35 : 1
+}
+
+function getCardNetwork(number) {
+  const digits = number.replace(/\D/g, '')
+  if (/^4/.test(digits)) return 'VISA'
+  if (/^(5[1-5]|2[2-7])/.test(digits)) return 'MASTERCARD'
+  if (/^3[47]/.test(digits)) return 'AMEX'
+  if (/^(60|65|81|82|508)/.test(digits)) return 'RuPay'
+  return 'CARD'
+}
+
 function createBookingMetadata() {
   const timestamp = Date.now()
   return {
@@ -92,9 +127,9 @@ function createBookingMetadata() {
 }
 
 const DESTINATIONS = [
-  { code: 'DXB', country: 'UNITED ARAB EMIRATES', tag: 'INTERNATIONAL BESTSELLER', price: 15800, art: 'dubai', route: 'DEL → DXB', detail: '4h 00m Non-stop', description: 'Experience architectural marvels, luxury shopping, and desert sky lounges with daily non-stop A350 departures.' },
-  { code: 'SIN', country: 'REPUBLIC OF SINGAPORE', tag: 'GARDEN CITY ESCAPE', price: 16900, art: 'singapore', route: 'BOM → SIN', detail: '5h 35m Non-stop', description: 'Fly from Mumbai to Changi and explore Marina Bay Sands, Gardens by the Bay, and celebrated street dining.' },
-  { code: 'LHR', country: 'UNITED KINGDOM', tag: 'FLAGSHIP LONG-HAUL', price: 38900, art: 'london', route: 'DEL → LHR', detail: '9h 20m Flagship', description: 'Fly our A350-1000 flagship to London Heathrow with full dining, OLED screens, and generous baggage.' },
+  { code: 'DXB', country: 'UNITED ARAB EMIRATES', tag: 'INTERNATIONAL BESTSELLER', price: 15800, art: 'dubai', route: 'DEL → DXB', detail: 'Sample route · schedules not live', description: 'Explore landmark architecture, desert escapes, and lively dining on a city break shaped around your interests.' },
+  { code: 'SIN', country: 'REPUBLIC OF SINGAPORE', tag: 'GARDEN CITY ESCAPE', price: 16900, art: 'singapore', route: 'BOM → SIN', detail: 'Sample route · schedules not live', description: 'Discover Marina Bay, Gardens by the Bay, and the celebrated food streets of Singapore.' },
+  { code: 'LHR', country: 'UNITED KINGDOM', tag: 'FLAGSHIP LONG-HAUL', price: 38900, art: 'london', route: 'DEL → LHR', detail: 'Sample route · schedules not live', description: 'Discover London’s historic streets, museums, theatres, and neighbourhood cafés.' },
   { code: 'GOI', country: 'GOA, INDIA', tag: 'COASTAL WEEKEND', price: 4899, art: 'goa', route: 'BOM → GOI', detail: '1h 20m Non-stop', description: 'Trade the city rush for palm-lined beaches, easy afternoons, and a relaxed Arabian Sea escape.' },
   { code: 'BLR', country: 'KARNATAKA, INDIA', tag: 'CITY & CULTURE', price: 6299, art: 'bengaluru', route: 'DEL → BLR', detail: '2h 45m Non-stop', description: 'Discover Bengaluru’s gardens, neighbourhood cafés, and lively mix of culture and technology.' },
 ]
@@ -119,11 +154,35 @@ const BAGGAGE_OPTIONS = [
   { id: '20kg', label: '20 kg checked bag', detail: 'Per traveler', inr: 1900, usd: 29 },
 ]
 const MEAL_OPTIONS = [
-  { id: 'standard', label: 'Standard', detail: 'Classic airline meal' },
-  { id: 'vegetarian', label: 'Vegetarian', detail: 'Meat-free meal' },
-  { id: 'vegan', label: 'Vegan', detail: 'Plant-based meal' },
-  { id: 'non-vegetarian', label: 'Non-vegetarian', detail: 'Meal with meat' },
+  { id: 'standard', category: 'No meal', label: 'No meal', detail: 'Skip the meal selection', inr: 0, usd: 0 },
+  { id: 'south-dosa', category: 'South Indian', label: 'Masala dosa combo', detail: 'Crisp dosa, potato masala & sambar', image: 'https://images.unsplash.com/photo-1743615467204-8fdaa85ff2db?auto=format&fit=crop&w=640&q=80', inr: 249, usd: 5 },
+  { id: 'south-idli', category: 'South Indian', label: 'Idli & vada plate', detail: 'Steamed idli, medu vada & chutneys', image: 'https://images.unsplash.com/photo-1741376509253-221ac18fac0f?auto=format&fit=crop&w=640&q=80', inr: 219, usd: 5 },
+  { id: 'north-paneer', category: 'North Indian', label: 'Paneer tikka thali', detail: 'Paneer, dal, rice, roti & seasonal salad', image: 'https://images.unsplash.com/photo-1631452180519-c014fe946bc7?auto=format&fit=crop&w=640&q=80', inr: 379, usd: 8 },
+  { id: 'north-chicken', category: 'North Indian', label: 'Chicken curry meal', detail: 'Chicken curry, jeera rice & butter roti', image: 'https://images.unsplash.com/photo-1757445059337-23e485483425?auto=format&fit=crop&w=640&q=80', inr: 449, usd: 10 },
+  { id: 'seasonal-winter', category: 'Seasonal specials', label: 'Winter comfort bowl', detail: 'Seasonal vegetable khichdi, soup & pickle', image: 'https://images.unsplash.com/photo-1789994405563-b372d9a270c2?auto=format&fit=crop&w=640&q=80', inr: 299, usd: 7 },
+  { id: 'seasonal-festive', category: 'Seasonal specials', label: 'Festive veg thali', detail: 'Seasonal curry, dal, rice, roti & sweet', image: 'https://images.unsplash.com/photo-1794468507547-1c193172d3c2?auto=format&fit=crop&w=640&q=80', inr: 499, usd: 11 },
 ]
+const MEAL_CATEGORIES = ['No meal', 'South Indian', 'North Indian', 'Seasonal specials']
+const LEGACY_MEAL_LABELS = { vegetarian: 'Vegetarian meal', vegan: 'Vegan meal', 'non-vegetarian': 'Non-vegetarian meal' }
+const PHONE_COUNTRY_CODES = ['+91', '+1', '+44', '+971', '+65', '+81']
+const NATIONALITIES = ['India', 'United States', 'United Kingdom', 'United Arab Emirates', 'Singapore', 'Japan', 'France', 'Canada', 'Australia', 'Other']
+
+function normalizeMealId(mealId) {
+  if (mealId === 'vegetarian') return 'north-paneer'
+  if (mealId === 'vegan') return 'south-idli'
+  if (mealId === 'non-vegetarian') return 'north-chicken'
+  return MEAL_OPTIONS.some((option) => option.id === mealId) ? mealId : 'standard'
+}
+
+function getMealLabel(mealId, fallback = 'standard') {
+  const option = MEAL_OPTIONS.find((meal) => meal.id === mealId)
+  return option?.label || LEGACY_MEAL_LABELS[mealId] || MEAL_OPTIONS.find((meal) => meal.id === fallback)?.label || LEGACY_MEAL_LABELS[fallback] || 'No meal'
+}
+
+function getMealPrice(mealId, currency) {
+  const meal = MEAL_OPTIONS.find((option) => option.id === mealId)
+  return currency === 'INR' ? meal?.inr || 0 : meal?.usd || 0
+}
 
 function readStoredBookings() {
   try {
@@ -190,6 +249,21 @@ function Icon({ name, size = 18, className = '' }) {
     sparkle: <><path d="m12 3 1.9 5.8L20 11l-6.1 2.2L12 19l-2-5.8L4 11l6-2.2L12 3Z" /><path d="m19 14 1.1 2.9L23 18l-2.9 1.1L19 22l-1-2.9L15 18l3-1.1 1-2.9Z" /></>,
   }
   return <svg {...common}>{paths[name] || paths.sparkle}</svg>
+}
+
+function AssistantPortrait({ compact = false }) {
+  return <span className={`assistant-portrait ${compact ? 'compact' : ''}`} aria-hidden="true">
+    <svg viewBox="0 0 64 64" role="presentation">
+      <circle cx="32" cy="32" r="31" fill="#dff2f7" />
+      <path d="M9 62c2-13 10-20 23-20s21 7 23 20" fill="#2d88a7" />
+      <path d="M17 29c-2-14 5-23 16-23 12 0 18 9 15 24l-3 12H20z" fill="#243f5a" />
+      <ellipse cx="32" cy="28" rx="13" ry="16" fill="#f2c5a7" />
+      <path d="M19 25c1-12 7-18 15-18 7 0 13 5 15 13-5 0-9-3-12-7-3 5-9 8-18 12" fill="#243f5a" />
+      <path d="M27 29h.2m9.6 0h.2" stroke="#34465a" strokeWidth="2.4" strokeLinecap="round" />
+      <path d="M28 36c2.3 2.3 5.7 2.3 8 0" fill="none" stroke="#b86f68" strokeWidth="1.8" strokeLinecap="round" />
+      <path d="m25 47 7 6 7-6" fill="#f6fbfd" />
+    </svg>
+  </span>
 }
 
 function formatDate(dateString) {
@@ -300,17 +374,19 @@ function TicketPass({ booking, onPrint, printTarget = false }) {
           </section>
         ))}
       </div>
-      <div className="ticket-passengers">
-        <div className="ticket-passengers-heading"><span>PASSENGER</span><span>OUTBOUND SEAT</span>{booking.returnFlight && <span>RETURN SEAT</span>}<span>MEAL</span></div>
+      <div className={`ticket-passengers ${booking.returnFlight ? 'return-ticket' : ''}`}>
+        <div className="ticket-passengers-heading"><span>PASSENGER</span><span>OUTBOUND SEAT</span>{booking.returnFlight && <span>RETURN SEAT</span>}<span>OUTBOUND MEAL</span>{booking.returnFlight && <span>RETURN MEAL</span>}</div>
         {passengerList.map((passenger, index) => (
           <div className="ticket-passenger-row" key={`${passenger.name || 'traveler'}-${index}`}>
-            <strong>{passenger.name || booking.passenger || `Traveler ${index + 1}`}</strong>
+            <strong>{passenger.name || booking.passenger || `Traveler ${index + 1}`}<small>{passenger.type ? `${passenger.type[0].toUpperCase()}${passenger.type.slice(1)}` : ''}{passenger.nationality ? ` · ${passenger.nationality}` : ''}</small></strong>
             <span>{passenger.outboundSeat || booking.seats?.[index] || '—'}</span>
             {booking.returnFlight && <span>{passenger.returnSeat || booking.returnSeats?.[index] || '—'}</span>}
-            <span>{MEAL_OPTIONS.find((option) => option.id === passenger.meal)?.label || MEAL_OPTIONS.find((option) => option.id === booking.mealPreference)?.label || 'Standard'}</span>
+            <span>{getMealLabel(passenger.outboundMeal || passenger.meal, booking.mealPreference)}</span>
+            {booking.returnFlight && <span>{getMealLabel(passenger.returnMeal || passenger.meal, booking.mealPreference)}</span>}
           </div>
         ))}
       </div>
+      {(booking.email || booking.phone) && <div className="boarding-ticket-contact">{booking.email && <span>{booking.email}</span>}{booking.phone && <span>{booking.phone}</span>}</div>}
       <div className="ticket-barcode-area">
         <div className="ticket-demo-barcode" aria-hidden="true" />
         <span>{booking.id} · DEMO REFERENCE ONLY</span>
@@ -324,12 +400,14 @@ function TicketPass({ booking, onPrint, printTarget = false }) {
   )
 }
 
-function createFlightResults(from, to, cabin = 'Economy') {
+function createFlightResults(from, to, cabin = 'Economy', travelDate = TODAY) {
   const currency = getCurrency(from, to)
+  const fareDate = new Date(`${travelDate}T12:00:00`)
+  const baseFare = getDemoFares(from, to, currency, Number.isNaN(fareDate.getTime()) ? new Date() : fareDate)
+  const fareStep = currency === 'INR' ? 240 : 8
+  const airlineFareFactors = [1.16, 1.28, 1.22, 1.08, 1]
   return FLIGHTS.map((flight, index) => {
-    const price = currency === 'INR'
-      ? [5299, 6199, 5799, 4899, 4499][index]
-      : flight.price + (from === 'DEL' && to === 'LHR' ? 110 : 35 + (index * 12))
+    const price = Math.round((baseFare * cabinFareMultiplier(cabin) * airlineFareFactors[index]) / fareStep) * fareStep
     return { ...flight, from, to, price, currency, cabin }
   })
 }
@@ -341,9 +419,13 @@ function createPassengerEntries(count, savedPassengers = [], legacySeats = [], l
     const saved = passengerData[index] || {}
     return {
       name: saved.name || '',
+      dateOfBirth: saved.dateOfBirth || '',
+      type: saved.type || passengerTypeForAge(getAgeOnDate(saved.dateOfBirth, TODAY)) || 'adult',
+      nationality: saved.nationality || 'India',
       outboundSeat: saved.outboundSeat || saved.seat || seats[index] || '',
       returnSeat: saved.returnSeat || '',
-      meal: saved.meal || legacyMeal,
+      outboundMeal: normalizeMealId(saved.outboundMeal || saved.meal || legacyMeal),
+      returnMeal: normalizeMealId(saved.returnMeal || saved.meal || legacyMeal),
     }
   })
 }
@@ -378,6 +460,7 @@ function App() {
   const [passengers, setPassengers] = useState(() => createPassengerEntries(initialTravelerCount, flowData.passengers, flowData.seats, flowData.mealPreference))
   const [activePassengerIndex, setActivePassengerIndex] = useState(0)
   const [seatLeg, setSeatLeg] = useState('outbound')
+  const [mealLeg, setMealLeg] = useState('outbound')
   const [baggageOption, setBaggageOption] = useState(flowData.baggageOption || 'included')
   const [storedData] = useState(readStoredBookings)
   const [bookings, setBookings] = useState(storedData.bookings)
@@ -385,14 +468,18 @@ function App() {
   const [notice, setNotice] = useState('')
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [travelerEmail, setTravelerEmail] = useState('')
+  const [travelerPhone, setTravelerPhone] = useState('')
+  const [phoneCountryCode, setPhoneCountryCode] = useState('+91')
   const [cardName, setCardName] = useState('')
   const [cardNumber, setCardNumber] = useState('')
   const [cardExpiry, setCardExpiry] = useState('')
   const [cardCvc, setCardCvc] = useState('')
   const [paymentMethod, setPaymentMethod] = useState('card')
   const [upiId, setUpiId] = useState('')
+  const [upiApp, setUpiApp] = useState('Google Pay')
   const [bank, setBank] = useState('')
   const [qrAcknowledged, setQrAcknowledged] = useState(false)
+  const [paymentProcessing, setPaymentProcessing] = useState(false)
   const [qrDataUrl, setQrDataUrl] = useState('')
   const [filter, setFilter] = useState('Recommended')
   const [airlineFilter, setAirlineFilter] = useState('All airlines')
@@ -405,6 +492,9 @@ function App() {
   const [printTicketId, setPrintTicketId] = useState('')
   const [copiedPromoCode, setCopiedPromoCode] = useState('')
   const [promoFeedback, setPromoFeedback] = useState('')
+  const [promoEntry, setPromoEntry] = useState('')
+  const [appliedPromoCode, setAppliedPromoCode] = useState('')
+  const [promoApplyFeedback, setPromoApplyFeedback] = useState('')
   const [theme, setTheme] = useState(readStoredTheme)
   const [fareAlerts, setFareAlerts] = useState(readStoredFareAlerts)
   const [fareAlertFeedback, setFareAlertFeedback] = useState('')
@@ -412,13 +502,22 @@ function App() {
   const [walkthroughOpen, setWalkthroughOpen] = useState(false)
   const [walkthroughStep, setWalkthroughStep] = useState(0)
   const walkthroughTriggerRef = useRef(null)
+  const [assistantOpen, setAssistantOpen] = useState(false)
+  const [assistantInput, setAssistantInput] = useState('')
+  const [assistantMessages, setAssistantMessages] = useState([{ role: 'assistant', text: 'Hi! Can I help you with a flight today?' }])
+  const assistantInputRef = useRef(null)
+  const assistantToggleRef = useRef(null)
+  const assistantMessagesRef = useRef(null)
 
   const today = TODAY
   const currency = selectedFlight?.currency || getCurrency(from, to)
   const fareDates = Array.from({ length: 7 }, (_, index) => {
     const date = new Date(`${today}T12:00:00`)
     date.setDate(date.getDate() + (fareWeekOffset * 7) + index)
-    return { date, key: dateKey(date), price: getDemoFares(from, to, getCurrency(from, to), date) }
+    const routeCurrency = getCurrency(from, to)
+    const fareStep = routeCurrency === 'INR' ? 240 : 8
+    const price = Math.round((getDemoFares(from, to, routeCurrency, date) * cabinFareMultiplier(cabin)) / fareStep) * fareStep
+    return { date, key: dateKey(date), price }
   })
   const lowestFare = Math.min(...fareDates.map((fare) => fare.price))
   const serviceFee = currency === 'INR' ? 650 : 36
@@ -426,11 +525,21 @@ function App() {
   const baggage = BAGGAGE_OPTIONS.find((option) => option.id === baggageOption) || BAGGAGE_OPTIONS[0]
   const baggagePrice = currency === 'INR' ? baggage.inr : baggage.usd
   const tripLegCount = selectedReturnFlight ? 2 : 1
-  const flightFareTotal = selectedFlight ? (selectedFlight.price + (selectedReturnFlight?.price || 0)) * travelers : 0
+  const flightFareTotal = selectedFlight ? passengers.reduce((sum, passenger) => sum + ((selectedFlight.price + (selectedReturnFlight?.price || 0)) * passengerFareMultiplier(passenger.type)), 0) : 0
+  const fullFlightFareTotal = selectedFlight ? (selectedFlight.price + (selectedReturnFlight?.price || 0)) * travelers : 0
+  const fareDiscount = Math.max(0, fullFlightFareTotal - flightFareTotal)
+  const appliedOffer = FESTIVE_OFFERS.find((offer) => offer.code === appliedPromoCode)
+  const promoRate = appliedOffer ? Number(appliedOffer.discount.match(/\d+/)?.[0] || 0) / 100 : 0
+  const promoDiscount = Math.round(flightFareTotal * promoRate)
+  const cardNetwork = getCardNetwork(cardNumber)
   const seatCount = passengers.reduce((count, passenger) => count + (passenger.outboundSeat ? 1 : 0) + (selectedReturnFlight && passenger.returnSeat ? 1 : 0), 0)
   const seatTotal = seatPrice * seatCount
   const baggageTotal = baggagePrice * travelers * tripLegCount
-  const total = selectedFlight ? flightFareTotal + serviceFee * travelers * tripLegCount + seatTotal + baggageTotal : 0
+  const mealTotal = passengers.reduce((sum, passenger) => (
+    sum + getMealPrice(passenger.outboundMeal, currency) + (selectedReturnFlight ? getMealPrice(passenger.returnMeal, currency) : 0)
+  ), 0)
+  const total = selectedFlight ? flightFareTotal - promoDiscount + serviceFee * travelers * tripLegCount + seatTotal + baggageTotal + mealTotal : 0
+  const isInternationalTrip = AIRPORTS[from]?.country !== 'India' || AIRPORTS[to]?.country !== 'India'
   const currentResults = activeLeg === 'return' ? returnResults : results
   const currentLegDate = activeLeg === 'return' ? returnDate : departDate
   const currentLegFrom = activeLeg === 'return' ? to : from
@@ -453,6 +562,7 @@ function App() {
   }, [airlineFilter, currentResults, departureFilter, filter, priceLimit, stopFilter])
   const activePassenger = passengers[activePassengerIndex] || passengers[0] || {}
   const currentSeatField = seatLeg === 'return' ? 'returnSeat' : 'outboundSeat'
+  const currentMealField = mealLeg === 'return' ? 'returnMeal' : 'outboundMeal'
   const assignedSeats = passengers.map((passenger, index) => index === activePassengerIndex ? '' : passenger[currentSeatField]).filter(Boolean)
   const matchingBookings = bookingLookupIds === null
     ? bookings
@@ -509,6 +619,23 @@ function App() {
       window.removeEventListener('keydown', handleKeyDown)
     }
   }, [walkthroughOpen])
+
+  useEffect(() => {
+    if (!assistantOpen) return undefined
+    assistantInputRef.current?.focus()
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        setAssistantOpen(false)
+        assistantToggleRef.current?.focus()
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [assistantOpen])
+
+  useEffect(() => {
+    if (assistantOpen && assistantMessagesRef.current) assistantMessagesRef.current.scrollTop = assistantMessagesRef.current.scrollHeight
+  }, [assistantMessages, assistantOpen])
 
   useEffect(() => {
     if (page !== 'home' || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return undefined
@@ -634,17 +761,24 @@ function App() {
       setNotice('Your return date must be after your departure date.')
       return
     }
-    const nextResults = createFlightResults(from, to, cabin)
-    const nextReturnResults = tripType === 'round-trip' ? createFlightResults(to, from, cabin) : []
-    const nextPassengers = createPassengerEntries(travelers, passengers)
+    const nextResults = createFlightResults(from, to, cabin, departDate)
+    const nextReturnResults = tripType === 'round-trip' ? createFlightResults(to, from, cabin, returnDate) : []
+    const nextPassengers = createPassengerEntries(travelers, passengers).map((passenger) => {
+      const type = passengerTypeForAge(getAgeOnDate(passenger.dateOfBirth, departDate))
+      return { ...passenger, type, ...(type === 'infant' ? { outboundSeat: '', returnSeat: '', outboundMeal: 'standard', returnMeal: 'standard' } : {}) }
+    })
     setResults(nextResults)
     setReturnResults(nextReturnResults)
     setPassengers(nextPassengers)
+    setAppliedPromoCode('')
+    setPromoEntry('')
+    setPromoApplyFeedback('')
     setSelectedFlight(null)
     setSelectedReturnFlight(null)
     setActiveLeg('outbound')
     setActivePassengerIndex(0)
     setSeatLeg('outbound')
+    setMealLeg('outbound')
     setBaggageOption('included')
     setFilter('Recommended')
     setAirlineFilter('All airlines')
@@ -714,6 +848,7 @@ function App() {
     })
     setActivePassengerIndex(0)
     setSeatLeg('outbound')
+    setMealLeg('outbound')
     navigateTo('checkout')
     setNotice('')
   }
@@ -771,7 +906,20 @@ function App() {
     }
   }
 
-  function completeBooking(event) {
+  function applyDemoPromo() {
+    const code = promoEntry.trim().toUpperCase()
+    const offer = FESTIVE_OFFERS.find((item) => item.code === code)
+    if (!offer) {
+      setAppliedPromoCode('')
+      setPromoApplyFeedback('That code is not in the current demo offers. Check the code and try again.')
+      return
+    }
+    setAppliedPromoCode(offer.code)
+    setPromoEntry(offer.code)
+    setPromoApplyFeedback(`${offer.discount} applied to the sample flight fare.`)
+  }
+
+  async function completeBooking(event) {
     event.preventDefault()
     setNotice('')
     if (!selectedFlight || (tripType === 'round-trip' && !selectedReturnFlight)) {
@@ -782,6 +930,15 @@ function App() {
       setNotice('Enter the name for every traveler to continue.')
       return
     }
+    if (passengers.some((passenger) => getAgeOnDate(passenger.dateOfBirth, departDate) === null)) {
+      setNotice('Enter a valid date of birth on or before the departure date for every traveler.')
+      return
+    }
+    const phoneDigits = travelerPhone.replace(/\D/g, '')
+    if (phoneDigits.length < 7 || phoneDigits.length > 15) {
+      setNotice('Enter a valid phone number with 7 to 15 digits.')
+      return
+    }
     if (paymentMethod === 'card') {
       const digits = cardNumber.replace(/\D/g, '')
       if (digits.length < 12 || !cardName.trim() || !cardExpiry.trim() || cardCvc.trim().length < 3) {
@@ -789,7 +946,7 @@ function App() {
         return
       }
     }
-    if (paymentMethod === 'upi' && !/^[\w.-]{2,256}@[a-zA-Z][\w.-]{1,63}$/.test(upiId.trim())) {
+    if (paymentMethod === 'upi' && upiId.trim() && !/^[\w.-]{2,256}@[a-zA-Z][\w.-]{1,63}$/.test(upiId.trim())) {
       setNotice('Enter a valid demo UPI ID, such as name@bank.')
       return
     }
@@ -801,11 +958,13 @@ function App() {
       setNotice('Confirm that you understand this is a demo-only QR code.')
       return
     }
+    const bookingMetadata = createBookingMetadata()
     const booking = {
-      ...createBookingMetadata(),
+      ...bookingMetadata,
       passenger: passengers[0].name.trim(),
       email: travelerEmail.trim(),
-      passengers: passengers.map((passenger) => ({ ...passenger, name: passenger.name.trim() })),
+      phone: `${phoneCountryCode} ${travelerPhone.trim()}`,
+      passengers: passengers.map((passenger) => ({ ...passenger, type: passengerTypeForAge(getAgeOnDate(passenger.dateOfBirth, departDate)), name: passenger.name.trim() })),
       flight: selectedFlight,
       returnFlight: selectedReturnFlight,
       tripType,
@@ -815,15 +974,23 @@ function App() {
       seats: passengers.map((passenger) => passenger.outboundSeat).filter(Boolean),
       returnSeats: passengers.map((passenger) => passenger.returnSeat).filter(Boolean),
       baggageOption,
-      mealPreference: passengers[0]?.meal || 'standard',
+      mealPreference: passengers[0]?.outboundMeal || 'standard',
       seatTotal,
       baggageTotal,
+      mealTotal,
+      promoCode: appliedPromoCode,
+      promoDiscount,
       total,
       currency,
-      paymentMethod,
+      paymentMethod: paymentMethod === 'upi' ? `UPI · ${upiApp}` : paymentMethod === 'card' ? `Card · ${cardNetwork}` : paymentMethod === 'netbanking' ? `Net banking · ${bank}` : 'Demo QR',
+      paymentReference: `PAY-${bookingMetadata.id}`,
+      paymentStatus: 'Simulated · no charge',
       status: 'Confirmed',
       checkInStatus: 'Not checked in',
     }
+    setPaymentProcessing(true)
+    setNotice('')
+    await new Promise((resolve) => window.setTimeout(resolve, 1200))
     const nextBookings = [booking, ...bookings]
     try {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(nextBookings))
@@ -844,7 +1011,33 @@ function App() {
       navigateTo('confirmation')
     } catch (error) {
       setNotice(`We couldn't save your reservation. Please check your browser storage and try again. (${error.message})`)
+    } finally {
+      setPaymentProcessing(false)
     }
+  }
+
+  function downloadPaymentReceipt(booking) {
+    const receipt = [
+      'SKYBOUND · DEMO PAYMENT RECEIPT',
+      'This is a frontend demo receipt. No real payment was processed.',
+      '',
+      `Payment reference: ${booking.paymentReference || `PAY-${booking.id}`}`,
+      `Booking reference: ${booking.id}`,
+      `Payment status: ${booking.paymentStatus || 'Demo paid'}`,
+      `Payment method: ${booking.paymentMethod || 'Demo checkout'}`,
+      `Promo code: ${booking.promoCode || 'None'}`,
+      `Promo discount: ${formatMoney(booking.promoDiscount || 0, booking.currency || 'INR')}`,
+      `Traveler: ${booking.passenger}`,
+      `Route: ${booking.flight.from} → ${booking.flight.to}${booking.returnFlight ? ` → ${booking.returnFlight.to}` : ''}`,
+      `Amount: ${formatMoney(booking.total, booking.currency || 'INR')}`,
+      `Date: ${new Date(booking.createdAt || Date.now()).toLocaleString('en-IN')}`,
+    ].join('\n')
+    const url = URL.createObjectURL(new Blob([receipt], { type: 'text/plain;charset=utf-8' }))
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `skybound-demo-receipt-${booking.id}.txt`
+    link.click()
+    URL.revokeObjectURL(url)
   }
 
   function openBookings() {
@@ -904,6 +1097,42 @@ function App() {
     window.setTimeout(() => walkthroughTriggerRef.current?.focus(), 0)
   }
 
+  function sendAssistantMessage(question) {
+    const text = question.trim()
+    if (!text) return
+    const normalized = text.toLowerCase()
+    let reply = { text: 'I can help with sample fares, booking steps, seats, meals, baggage, and saved trips. Try one of the quick questions below.', action: null }
+    if (/fare|cheap|lowest|price|date|cost/.test(normalized)) {
+      reply = { text: `For ${AIRPORTS[from]?.city} to ${AIRPORTS[to]?.city}, the lowest sample fare in the dates shown is ${formatMoney(lowestFare, getCurrency(from, to))}. Choose a day in the flexible-fare strip to set your departure date.`, action: { label: 'See flexible fares', type: 'fares' } }
+    } else if (/my trip|my booking|booking|pnr|cancel|check.?in|reservation/.test(normalized)) {
+      reply = { text: 'Your demo reservations are saved on this device. Open My Trips to filter upcoming, completed, and cancelled bookings or look up a PNR.', action: { label: 'Open My Trips', type: 'trips' } }
+    } else if (/seat|meal|food|baggage|bag|luggage/.test(normalized)) {
+      reply = { text: 'After you choose a sample flight, the checkout lets you select seats, a meal, and checked baggage before confirming your demo booking.', action: { label: 'Start a sample booking', type: 'booking' } }
+    } else if (/book|flight|route|ticket|search/.test(normalized)) {
+      reply = { text: 'Start with your departure and arrival cities, pick a date, then compare the available demo flights. No real booking or payment happens.', action: { label: 'Search sample flights', type: 'booking' } }
+    } else if (/help|human|agent|support/.test(normalized)) {
+      reply = { text: 'I’m the Skybound demo travel assistant. I can guide you around this sample booking site, but live airline support is not connected.' }
+    }
+    setAssistantMessages((messages) => [...messages, { role: 'user', text }, { role: 'assistant', ...reply }])
+    setAssistantInput('')
+  }
+
+  function submitAssistantMessage(event) {
+    event.preventDefault()
+    sendAssistantMessage(assistantInput)
+  }
+
+  function runAssistantAction(action) {
+    setAssistantOpen(false)
+    if (action === 'trips') {
+      openBookings()
+      return
+    }
+    const target = action === 'fares' ? 'fare-calendar' : 'flight-search'
+    if (page !== 'home') goHome()
+    window.setTimeout(() => document.getElementById(target)?.scrollIntoView({ behavior: 'smooth', block: 'center' }), page === 'home' ? 0 : 450)
+  }
+
   function checkInBooking(bookingId) {
     const nextBookings = bookings.map((booking) => booking.id === bookingId
       ? { ...booking, checkInStatus: 'Checked in' }
@@ -949,7 +1178,7 @@ function App() {
     try {
       await navigator.clipboard.writeText(code)
       setCopiedPromoCode(code)
-      setPromoFeedback(`${code} copied. These demo offers do not change your booking total.`)
+      setPromoFeedback(`${code} copied. Enter it at checkout to apply the sample flight-fare discount.`)
     } catch (error) {
       setPromoFeedback(`We couldn't copy ${code}: ${error.message}. You can select and copy the code above.`)
     }
@@ -1007,7 +1236,7 @@ function App() {
           <a className={`nav-link ${page === 'bookings' ? 'active' : ''}`} href={ROUTES.bookings} onClick={(event) => { event.preventDefault(); openBookings() }} aria-current={page === 'bookings' ? 'page' : undefined}>My bookings</a>
           <a className={`nav-link ${page === 'about' ? 'active' : ''}`} href={ROUTES.about} onClick={(event) => { event.preventDefault(); navigateTo('about') }} aria-current={page === 'about' ? 'page' : undefined}>About</a>
           <a className={`nav-link ${page === 'contact' ? 'active' : ''}`} href={ROUTES.contact} onClick={(event) => { event.preventDefault(); navigateTo('contact') }} aria-current={page === 'contact' ? 'page' : undefined}>Contact</a>
-          <a className={`nav-link admin-link ${page === 'admin' ? 'active' : ''}`} href={ROUTES.admin} onClick={(event) => { event.preventDefault(); navigateTo('admin') }} aria-current={page === 'admin' ? 'page' : undefined}>Admin</a>
+          <a className={`nav-link admin-link ${page === 'admin' ? 'active' : ''}`} href={ROUTES.admin} onClick={(event) => { event.preventDefault(); navigateTo('admin') }} aria-current={page === 'admin' ? 'page' : undefined}>Demo admin</a>
           <a className={`nav-link help-link ${page === 'help' ? 'active' : ''}`} href={ROUTES.help} onClick={(event) => { event.preventDefault(); navigateTo('help') }}>Help</a>
         </nav>
         <button className="theme-toggle" type="button" aria-pressed={theme === 'dark'} aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'} onClick={() => setTheme((current) => current === 'dark' ? 'light' : 'dark')}>
@@ -1036,7 +1265,7 @@ function App() {
                 <h1>Find your next <span>great escape.</span></h1>
                 <p>Explore sample routes, compare clear fares, and shape a trip that feels like yours — all in just a few clicks.</p>
                 <div className="hero-stats">
-                  <div><strong>17</strong><span>Demo destinations</span></div>
+                <div><strong>{Object.keys(AIRPORTS).length}</strong><span>Demo airports</span></div>
                   <div><strong>4 cabins</strong><span>From economy to first</span></div>
                   <div><strong>Your way</strong><span>One-way or return</span></div>
                   <div><strong>Zero charge</strong><span>Safe demo checkout</span></div>
@@ -1110,9 +1339,9 @@ function App() {
                 </div>
                 <button className="search-button" type="submit"><span>Search flights</span><Icon name="arrow" size={18} /></button>
               </form>
-              <div className="fare-calendar" aria-label="Demo fares by departure date">
+              <div className="fare-calendar" id="fare-calendar" aria-label="Demo fares by departure date">
                 <div className="fare-calendar-heading">
-                  <span><strong>Flexible dates</strong><small>Sample one-way fares · {AIRPORTS[from]?.city} to {AIRPORTS[to]?.city}</small></span>
+                  <span><strong>Flexible dates</strong><small>One-way sample {cabin} fares · {AIRPORTS[from]?.city} to {AIRPORTS[to]?.city}</small></span>
                   <div className="fare-calendar-controls">
                     <span>Week {fareWeekOffset + 1}</span>
                     <button type="button" aria-label="Previous week" disabled={fareWeekOffset === 0} onClick={() => setFareWeekOffset((week) => Math.max(0, week - 1))}>‹</button>
@@ -1127,7 +1356,7 @@ function App() {
                     {fare.price === lowestFare && <small>LOWEST</small>}
                   </button>)}
                 </div>
-                <p className="fare-calendar-note">Demo prices only. Choosing a date updates your departure field.</p>
+              <p className="fare-calendar-note">Sample fares update with route, date, and cabin. Prices are illustrative, not live availability.</p>
                 <button className="fare-alert-toggle" type="button" aria-pressed={hasCurrentFareAlert} onClick={toggleFareAlert}>{hasCurrentFareAlert ? '✓ Fare watch saved' : '＋ Save fare watch'}</button>
                 {fareAlerts.length > 0 && <div className="fare-alert-list" aria-label="Saved demo fare watches">
                   <strong>Saved fare watches</strong>
@@ -1179,7 +1408,7 @@ function App() {
             <div className="home-lower-section">
             <section className="promo-section">
               <div className="promo-heading"><span>FESTIVE SEASON · WINTER 2026-27</span><h2>Celebrate the season with Skybound</h2></div>
-              <p className="promo-disclaimer">Sample promo codes for the frontend demo only. They are illustrative and do not change booking prices.</p>
+              <p className="promo-disclaimer">Try a seasonal code at checkout for a sample discount on the flight fare. Offers are frontend demo data, not live airline promotions.</p>
               <div className="promo-grid">
                 {FESTIVE_OFFERS.map((offer) => <article className={`promo-card promo-${offer.style}`} key={offer.code}>
                   <div className="promo-top"><span>{offer.label}</span><strong>{offer.discount}</strong></div>
@@ -1193,18 +1422,18 @@ function App() {
             <section className="benefits-section">
               <div className="promo-heading"><span>Engineered For Reliability</span><h2>Why Travellers Choose Skybound</h2></div>
               <div className="benefits-grid">
-                <article><span className="benefit-icon"><Icon name="shield" size={22} /></span><h3>100% transparent INR pricing</h3><p>Every fare, airport charge, and checkout component is visible before booking.</p></article>
-                <article><span className="benefit-icon"><Icon name="plane" size={22} /></span><h3>Instant PNR &amp; boarding pass</h3><p>Receive a unique PNR and printable pass immediately after confirmation.</p></article>
-                <article><span className="benefit-icon"><Icon name="sparkle" size={22} /></span><h3>Complimentary seat &amp; meal choice</h3><p>Choose seats and meals while reviewing your full itinerary.</p></article>
-                <article><span className="benefit-icon"><Icon name="shield" size={22} /></span><h3>Safe sandbox checkout</h3><p>Test every payment option without processing real money or storing card data.</p></article>
+              <article><span className="benefit-icon"><Icon name="shield" size={22} /></span><h3>Clear sample pricing</h3><p>Review demo flight fares in INR or USD, plus taxes and optional extras, before checkout.</p></article>
+              <article><span className="benefit-icon"><Icon name="plane" size={22} /></span><h3>Demo booking reference</h3><p>See a locally generated reference and printable ticket preview after simulated checkout.</p></article>
+              <article><span className="benefit-icon"><Icon name="sparkle" size={22} /></span><h3>Personalize the itinerary</h3><p>Explore optional seats, baggage, meals, and age-based sample fares in checkout.</p></article>
+              <article><span className="benefit-icon"><Icon name="shield" size={22} /></span><h3>Simulated checkout</h3><p>Try the payment screens without processing money or saving card details.</p></article>
               </div>
             </section>
             <section className="testimonials-section">
-              <div className="promo-heading"><span>Verified Flyer Feedback</span><h2>What Frequent Flyers Say</h2></div>
+              <div className="promo-heading"><span>SAMPLE TRAVELER STORIES</span><h2>What Flyers Might Say</h2></div>
               <div className="testimonials-grid">
-                <article><div className="stars">★★★★★</div><p>“The booking flow is clear, fast, and the PNR confirmation feels complete.”</p><strong>Aarav Mehta</strong><span>Product Architect · Bengaluru</span></article>
-                <article><div className="stars">★★★★★</div><p>“Cabin comparison and itinerary details make corporate travel planning effortless.”</p><strong>Dr. Naina Kapoor</strong><span>Trade Consultant · New Delhi</span></article>
-                <article><div className="stars">★★★★★</div><p>“Clean typography, clear fares, and a seamless multi-passenger reservation flow.”</p><strong>Rohan Deshmukh</strong><span>UX Lead · Mumbai</span></article>
+                <article><div className="stars">★★★★★</div><p>“The booking flow is clear, fast, and the demo reference makes the journey easy to follow.”</p><strong>Aarav Mehta</strong><span>Sample traveler · Bengaluru</span></article>
+                <article><div className="stars">★★★★★</div><p>“Cabin comparison and itinerary details make this sample trip easy to plan.”</p><strong>Dr. Naina Kapoor</strong><span>Sample traveler · New Delhi</span></article>
+                <article><div className="stars">★★★★★</div><p>“Clean typography, clear fares, and a seamless multi-passenger reservation flow.”</p><strong>Rohan Deshmukh</strong><span>Sample traveler · Mumbai</span></article>
               </div>
             </section>
             <section className="bottom-promise"><div className="promise-icon"><Icon name="sparkle" size={20} /></div><p>Less planning, more <span>being there.</span></p><span>Great journeys start with a little curiosity.</span></section>
@@ -1276,13 +1505,22 @@ function App() {
           <section className="inner-page checkout-page">
             <button className="back-link" onClick={() => { if (tripType === 'round-trip') { setActiveLeg('return'); setSelectedReturnFlight(null) } navigateTo('results') }}>← Back to flights</button>
             <BookingProgress activeStep={2} />
-            <div className="checkout-heading"><span className="eyebrow"><span className="eyebrow-line" />ALMOST THERE</span><h1>Make it <span>official.</span></h1><p>Your next favorite story is just a few details away.</p></div>
+            <div className="checkout-heading"><span className="eyebrow"><span className="eyebrow-line" />ALMOST THERE</span><h1>Plan the <span>details.</span></h1><p>Your sample itinerary is just a few choices away.</p></div>
             <div className="checkout-layout">
               <form className="checkout-form" onSubmit={completeBooking}>
-                <section className="checkout-section"><div className="checkout-section-title"><span className="step-number">01</span><div><h2>Traveler details</h2><p>Make sure it matches your travel ID.</p></div></div>
+                <section className="checkout-section traveler-details-section"><div className="checkout-section-title"><span className="step-number">01</span><div><h2>Traveler details</h2><p>Make sure it matches your travel ID.</p></div></div>
                   <div className="passenger-details-grid">
-                    {passengers.map((passenger, index) => <label className="form-field" key={`traveler-${index}`}>Traveler {index + 1} full name<input className="form-control" required autoComplete={index === 0 ? 'name' : 'off'} value={passenger.name} onChange={(event) => updatePassenger(index, { name: event.target.value })} placeholder={index === 0 ? 'e.g. Jordan Lee' : `Traveler ${index + 1} name`} /></label>)}
-                    <label className="form-field">Contact email<input className="form-control" required type="email" autoComplete="email" value={travelerEmail} onChange={(event) => setTravelerEmail(event.target.value)} placeholder="you@example.com" /></label>
+                    {passengers.map((passenger, index) => <div className="passenger-detail-card" key={`traveler-${index}`}>
+                      <label className="form-field">Traveler {index + 1} full name<input className="form-control" required autoComplete={index === 0 ? 'name' : 'off'} value={passenger.name} onChange={(event) => updatePassenger(index, { name: event.target.value })} placeholder={index === 0 ? 'e.g. Jordan Lee' : `Traveler ${index + 1} name`} /></label>
+              <label className="form-field">Date of birth<input className="form-control" required type="date" autoComplete="bday" max={departDate || TODAY} value={passenger.dateOfBirth} onChange={(event) => { const dateOfBirth = event.target.value; const type = passengerTypeForAge(getAgeOnDate(dateOfBirth, departDate)); updatePassenger(index, { dateOfBirth, type, ...(type === 'infant' ? { outboundSeat: '', returnSeat: '', outboundMeal: 'standard', returnMeal: 'standard' } : {}) }) }} /></label>
+                      <div className="passenger-age-fare"><span>Passenger category</span><strong>{passenger.type[0].toUpperCase() + passenger.type.slice(1)} · {passenger.type === 'child' ? '50% sample fare' : passenger.type === 'infant' ? '10% sample fare' : 'Full sample fare'}</strong></div>
+                      {isInternationalTrip && <label className="form-field">Nationality <span className="optional-field-label">Optional</span><select className="form-select" value={passenger.nationality} onChange={(event) => updatePassenger(index, { nationality: event.target.value })}>{NATIONALITIES.map((nationality) => <option key={nationality} value={nationality}>{nationality}</option>)}</select></label>}
+                    </div>)}
+                    <div className="passenger-contact-fields">
+                      <label className="form-field">Contact email<input className="form-control" required type="email" autoComplete="email" value={travelerEmail} onChange={(event) => setTravelerEmail(event.target.value)} placeholder="you@example.com" /></label>
+                      <label className="form-field">Mobile number<span className="phone-field-control"><select aria-label="Phone country calling code" value={phoneCountryCode} onChange={(event) => setPhoneCountryCode(event.target.value)}>{PHONE_COUNTRY_CODES.map((code) => <option key={code}>{code}</option>)}</select><input className="form-control" required type="tel" inputMode="tel" autoComplete="tel-national" maxLength={16} value={travelerPhone} onChange={(event) => setTravelerPhone(event.target.value.replace(/[^\d\s()-]/g, '').slice(0, 16))} placeholder="98765 43210" /></span></label>
+                    </div>
+                    <p className="passenger-details-note">Demo age rule at departure: under 2 years = 10%, ages 2–11 = half fare, and 12+ = full fare. Nationality is optional on international routes; airline rules and prices vary.</p>
                   </div>
                 </section>
                 <section className="checkout-section trip-options-section">
@@ -1298,7 +1536,8 @@ function App() {
                     >Traveler {index + 1}{passenger.name ? ` · ${passenger.name}` : ''}</button>)}
                   </div>
                   <div className="trip-option-block">
-                    <div className="trip-option-heading"><strong>Choose a seat for {activePassenger.name || `Traveler ${activePassengerIndex + 1}`}</strong><span>{formatMoney(seatPrice, currency)} per seat, per leg</span></div>
+                    <div className="trip-option-heading"><strong>{activePassenger.type === 'infant' ? 'Infant travel' : `Choose a seat for ${activePassenger.name || `Traveler ${activePassengerIndex + 1}`}`}</strong>{activePassenger.type !== 'infant' && <span>{formatMoney(seatPrice, currency)} per seat, per leg</span>}</div>
+                    {activePassenger.type === 'infant' ? <p className="infant-policy-note">This demo treats travelers under 2 as lap infants: no separate seat or meal is added. Real airline infant policies and fares vary.</p> : <>
                     {selectedReturnFlight && <div className="seat-leg-tabs" role="tablist" aria-label="Choose which flight leg to assign a seat">
                       <button aria-pressed={seatLeg === 'outbound'} className={seatLeg === 'outbound' ? 'selected' : ''} onClick={() => setSeatLeg('outbound')} type="button">Outbound · {formatDate(departDate)}</button>
                       <button aria-pressed={seatLeg === 'return'} className={seatLeg === 'return' ? 'selected' : ''} onClick={() => setSeatLeg('return')} type="button">Return · {formatDate(returnDate)}</button>
@@ -1329,6 +1568,7 @@ function App() {
                       ))}
                     </div>
                     <p className="trip-option-hint">{passengers.filter((passenger) => passenger[currentSeatField]).length} of {travelers} travelers have a seat for this leg. Seat selection is optional and simulated.</p>
+                    </>}
                   </div>
                   <div className="trip-option-block">
                     <div className="trip-option-heading"><strong>Checked baggage</strong><span>Per traveler, for each flight leg · personal item included</span></div>
@@ -1351,25 +1591,54 @@ function App() {
                     </div>
                   </div>
                   <div className="trip-option-block">
-                    <div className="trip-option-heading"><strong>Meal for {activePassenger.name || `Traveler ${activePassengerIndex + 1}`}</strong><span>Included for this flight</span></div>
-                    <div className="option-card-grid meal-options">
-                      {MEAL_OPTIONS.map((option) => (
-                        <button
-                          aria-pressed={activePassenger.meal === option.id}
-                          className={`trip-choice-card meal-choice ${activePassenger.meal === option.id ? 'selected' : ''}`}
-                          key={option.id}
-                          onClick={() => updatePassenger(activePassengerIndex, { meal: option.id })}
-                          type="button"
-                        >
-                          <span className="meal-choice-indicator" />
-                          <strong>{option.label}</strong>
-                          <small>{option.detail}</small>
-                        </button>
-                      ))}
-                    </div>
+                    <div className="trip-option-heading"><strong>Choose a {mealLeg} meal for {activePassenger.name || `Traveler ${activePassengerIndex + 1}`}</strong><span>Choose a different dish for each flight leg</span></div>
+                    {selectedReturnFlight && <div className="seat-leg-tabs meal-leg-tabs" role="tablist" aria-label="Choose which flight leg to order a meal for">
+                      <button type="button" role="tab" aria-selected={mealLeg === 'outbound'} className={mealLeg === 'outbound' ? 'selected' : ''} onClick={() => setMealLeg('outbound')}>Outbound · {formatDate(departDate)}</button>
+                      <button type="button" role="tab" aria-selected={mealLeg === 'return'} className={mealLeg === 'return' ? 'selected' : ''} onClick={() => setMealLeg('return')}>Return · {formatDate(returnDate)}</button>
+                    </div>}
+                    {activePassenger.type === 'infant' ? <p className="infant-policy-note">The selected demo age rule does not add a separate infant meal. Choose an adult or child traveler above to customize meals.</p> : <div className="meal-menu-groups">
+                      {MEAL_CATEGORIES.map((category) => <section className="meal-menu-category" key={category} aria-label={`${category} meal options`}>
+                        <h3>{category}</h3>
+                        <div className="option-card-grid meal-options">
+                          {MEAL_OPTIONS.filter((option) => option.category === category).map((option) => {
+                            const mealPrice = currency === 'INR' ? option.inr : option.usd
+                            return <button
+                              aria-pressed={activePassenger[currentMealField] === option.id}
+                              className={`trip-choice-card meal-choice ${activePassenger[currentMealField] === option.id ? 'selected' : ''}`}
+                              key={option.id}
+                              onClick={() => updatePassenger(activePassengerIndex, { [currentMealField]: option.id })}
+                              type="button"
+                            >
+                              <span className={`meal-choice-image-wrap ${option.image ? '' : 'empty'}`}>
+                                {option.image ? <img src={option.image} alt={`${option.label} meal`} loading="lazy" /> : <Icon name="bag" size={23} />}
+                              </span>
+                              <span className="meal-choice-indicator" />
+                              <strong>{option.label}</strong>
+                              <small>{option.detail}</small>
+                              <b>{mealPrice ? `+${formatMoney(mealPrice, currency)} / leg` : 'No extra charge'}</b>
+                            </button>
+                          })}
+                        </div>
+                      </section>)}
+                    </div>}
+                    <section className={`meal-cart ${selectedReturnFlight ? 'has-return' : ''}`} aria-label="Selected meal cart">
+                      <div className="meal-cart-header"><span><strong>Meal cart</strong><small>Selected dishes by traveler and flight</small></span><b>{formatMoney(mealTotal, currency)}</b></div>
+                      {passengers.map((passenger, index) => {
+                        const outboundPrice = getMealPrice(passenger.outboundMeal, currency)
+                        const returnPrice = selectedReturnFlight ? getMealPrice(passenger.returnMeal, currency) : 0
+                        return <div className="meal-cart-row" key={`meal-cart-${index}`}>
+                          <strong>{passenger.name || `Traveler ${index + 1}`}</strong>
+                          <span><small>Outbound</small>{getMealLabel(passenger.outboundMeal)} · {formatMoney(outboundPrice, currency)}</span>
+                          {selectedReturnFlight && <span><small>Return</small>{getMealLabel(passenger.returnMeal)} · {formatMoney(returnPrice, currency)}</span>}
+                        </div>
+                      })}
+                      <p>Prices are demo-only and charged per selected traveler and flight leg.</p>
+                    </section>
                   </div>
                 </section>
                 <section className="checkout-section payment-section"><div className="checkout-section-title"><span className="step-number">03</span><div><h2>Payment</h2><p>Choose an option for the demo checkout.</p></div></div>
+                  <div className="demo-gateway-header"><span className="demo-gateway-mark">R</span><span className="demo-gateway-title"><strong>Secure checkout</strong><small>Razorpay-style payment demo</small></span><span className="demo-gateway-badge">DEMO</span></div>
+                  <div className="demo-gateway-amount"><span><small>DEMO AMOUNT · NO CHARGE</small><strong>{formatMoney(total, currency)}</strong></span><span className="demo-gateway-lock"><Icon name="shield" size={15} /> Simulation only</span></div>
                   <div className="payment-methods" role="tablist" aria-label="Payment method">
                     <button type="button" role="tab" aria-selected={paymentMethod === 'upi'} className={`payment-method ${paymentMethod === 'upi' ? 'selected' : ''}`} onClick={() => choosePaymentMethod('upi')}><span className="method-symbol">U</span><span>UPI</span></button>
                     <button type="button" role="tab" aria-selected={paymentMethod === 'netbanking'} className={`payment-method ${paymentMethod === 'netbanking' ? 'selected' : ''}`} onClick={() => choosePaymentMethod('netbanking')}><span className="method-symbol">N</span><span>Net banking</span></button>
@@ -1377,8 +1646,12 @@ function App() {
                     <button type="button" role="tab" aria-selected={paymentMethod === 'card'} className={`payment-method ${paymentMethod === 'card' ? 'selected' : ''}`} onClick={() => choosePaymentMethod('card')}><span className="method-symbol">▭</span><span>Card</span></button>
                   </div>
                   {paymentMethod === 'upi' && <div className="payment-panel" role="tabpanel">
-                    <label className="form-field">UPI ID<input className="form-control" autoComplete="off" value={upiId} onChange={(event) => setUpiId(event.target.value)} placeholder="yourname@bank" /></label>
-                    <p className="payment-panel-hint">Enter any valid-format UPI ID to preview the demo flow. No UPI request will be sent.</p>
+                    <span className="upi-app-label">Choose a UPI app</span>
+                    <div className="upi-app-choices" role="group" aria-label="Select demo UPI app">
+                      {['Google Pay', 'PhonePe', 'Paytm'].map((app) => <button type="button" key={app} className={`upi-app-choice ${upiApp === app ? 'selected' : ''}`} aria-pressed={upiApp === app} onClick={() => setUpiApp(app)}><span>{app === 'Google Pay' ? 'G' : app === 'PhonePe' ? 'पे' : 'P'}</span>{app}</button>)}
+                    </div>
+                    <label className="form-field">UPI ID <span className="optional-field-label">Optional</span><input className="form-control" autoComplete="off" value={upiId} onChange={(event) => setUpiId(event.target.value)} placeholder="yourname@bank" /></label>
+                    <p className="payment-panel-hint">Demo only: choosing {upiApp} will show a simulated payment step. No app will open and no UPI request will be sent.</p>
                   </div>}
                   {paymentMethod === 'netbanking' && <div className="payment-panel" role="tabpanel">
                     <label className="form-field">Choose your bank<select className="form-select" value={bank} onChange={(event) => setBank(event.target.value)}><option value="">Select a bank</option><option value="state-bank">State Bank of India</option><option value="hdfc">HDFC Bank</option><option value="icici">ICICI Bank</option><option value="axis">Axis Bank</option><option value="other">Other bank</option></select></label>
@@ -1392,15 +1665,17 @@ function App() {
                   </div>}
                   {paymentMethod === 'card' && <div className="payment-panel" role="tabpanel">
                     <div className="card-brands">VISA · MC · AMEX</div>
+                    <div className={`demo-card-preview ${cardNetwork !== 'CARD' ? 'has-number' : ''}`}><span className="demo-card-chip" /><strong>{cardNetwork}</strong><span className="demo-card-number">{cardNumber.replace(/\D/g, '').length ? `••••  ••••  ••••  ${cardNumber.replace(/\D/g, '').slice(-4).padStart(4, '•')}` : '••••  ••••  ••••  ••••'}</span><span className="demo-card-holder">{cardName.trim() || 'CARDHOLDER NAME'}</span><span className="demo-card-expiry">{cardExpiry || 'MM / YY'}</span></div>
                     <label className="form-field">Name on card<input className="form-control" autoComplete="cc-name" value={cardName} onChange={(event) => setCardName(event.target.value)} placeholder="Name as it appears on card" /></label>
-                    <label className="form-field">Card number<input className="form-control" inputMode="numeric" autoComplete="cc-number" maxLength={23} value={cardNumber} onChange={(event) => setCardNumber(event.target.value.replace(/[^\d ]/g, '').slice(0, 19))} placeholder="0000  0000  0000  0000" /></label>
+                    <label className="form-field">Card number<input className="form-control" inputMode="numeric" autoComplete="cc-number" maxLength={19} value={cardNumber} onChange={(event) => setCardNumber(event.target.value.replace(/\D/g, '').slice(0, 16).replace(/(\d{4})(?=\d)/g, '$1 '))} placeholder="0000  0000  0000  0000" /></label>
                     <div className="form-row payment-row"><label className="form-field">Expiry date<input className="form-control" autoComplete="cc-exp" maxLength={5} value={cardExpiry} onChange={(event) => setCardExpiry(event.target.value.replace(/[^\d/]/g, '').slice(0, 5))} placeholder="MM / YY" /></label><label className="form-field">Security code<input className="form-control" inputMode="numeric" autoComplete="cc-csc" maxLength={4} value={cardCvc} onChange={(event) => setCardCvc(event.target.value.replace(/\D/g, '').slice(0, 4))} placeholder="CVC" /></label></div>
                     <div className="demo-payment-note"><Icon name="shield" size={17} /><span>Demo only — no payment is processed and card details are never saved.</span></div>
                   </div>}
+                  {paymentProcessing && <div className="payment-processing" role="status" aria-live="polite"><span className="payment-spinner" /><span><strong>Processing demo payment…</strong><small>Securing your sample booking. Please wait.</small></span></div>}
                   <div className="demo-payment-note payment-security-note"><Icon name="shield" size={17} /><span>Frontend demo only. UPI, bank, QR, and card options do not process real payments.</span></div>
                 </section>
                 {notice && <p className="inline-notice" role="alert">{notice}</p>}
-                <button className="pay-button" type="submit"><span>Confirm demo booking · {formatMoney(total, currency)}</span><Icon name="arrow" size={18} /></button>
+                <button className="pay-button" type="submit" disabled={paymentProcessing}><span>{paymentProcessing ? 'Processing demo payment…' : `Pay ${formatMoney(total, currency)} · Demo`}</span>{!paymentProcessing && <Icon name="arrow" size={18} />}</button>
                 <p className="checkout-terms">By continuing, you agree to our <a href="mailto:concierge@skybound-demo.in">booking terms</a>.</p>
               </form>
               <aside className="booking-summary">
@@ -1413,11 +1688,15 @@ function App() {
                   </div>
                 ))}
                 <div className="summary-divider" />
-                <div className="price-line"><span>Flights · {travelers} {travelers === 1 ? 'traveler' : 'travelers'}</span><span>{formatMoney(flightFareTotal, currency)}</span></div>
+                <div className="price-line"><span>Flights · {travelers} {travelers === 1 ? 'traveler' : 'travelers'}</span><span>{formatMoney(fullFlightFareTotal, currency)}</span></div>
+                <div className="passenger-fare-breakdown">{passengers.map((passenger, index) => <div className="passenger-fare-row" key={`fare-${index}`}><span>{passenger.name || `Traveler ${index + 1}`} · {passenger.type}</span><strong>{formatMoney(((selectedFlight.price + (selectedReturnFlight?.price || 0)) * passengerFareMultiplier(passenger.type)), currency)}</strong></div>)}</div>
+                {fareDiscount > 0 && <div className="price-line fare-discount-line"><span>Child / infant fare discount</span><span>−{formatMoney(fareDiscount, currency)}</span></div>}
+                {appliedOffer && <div className="price-line fare-discount-line"><span>{appliedOffer.code} · {appliedOffer.discount}</span><span>−{formatMoney(promoDiscount, currency)}</span></div>}
                 <div className="price-line"><span>Taxes &amp; fees</span><span>{formatMoney(serviceFee * travelers * tripLegCount, currency)}</span></div>
                 <div className="price-line"><span>Seat selection · {seatCount}</span><span>{formatMoney(seatTotal, currency)}</span></div>
                 <div className="price-line"><span>{baggage.label} · {travelers} × {tripLegCount} leg{tripLegCount === 1 ? '' : 's'}</span><span>{formatMoney(baggageTotal, currency)}</span></div>
-                <div className="price-line"><span>Meals · {travelers} traveler{travelers === 1 ? '' : 's'}</span><span>Included</span></div>
+                <div className="price-line"><span>Meals · {travelers} traveler{travelers === 1 ? '' : 's'} × {tripLegCount} leg{tripLegCount === 1 ? '' : 's'}</span><span>{formatMoney(mealTotal, currency)}</span></div>
+                <div className="summary-promo"><label htmlFor="checkout-promo">Seasonal offer code</label><div><input id="checkout-promo" value={promoEntry} onChange={(event) => setPromoEntry(event.target.value.toUpperCase())} placeholder="Enter a demo code" /><button type="button" onClick={applyDemoPromo}>{appliedPromoCode ? 'Apply again' : 'Apply'}</button></div><small>Codes shown in Seasonal offers discount the sample flight fare only.</small>{promoApplyFeedback && <p role="status" aria-live="polite">{promoApplyFeedback}</p>}</div>
                 <div className="summary-divider" />
                 <div className="price-line total-line"><strong>Total</strong><strong>{formatMoney(total, currency)}</strong></div>
                 <p className="summary-footnote"><Icon name="shield" size={15} /> Sample fares. No real payment is processed.</p>
@@ -1431,9 +1710,10 @@ function App() {
             <div className="confirmation-card ticket-confirmation-card">
               <BookingProgress activeStep={3} />
               <span className="confirmation-check"><Icon name="check" size={28} /></span>
-              <span className="eyebrow">IT'S REALLY HAPPENING</span>
+            <span className="eyebrow">YOUR DEMO BOOKING IS READY</span>
               <h1>You're going <span>places.</span></h1>
-              <p>Your demo reservation is saved on this device. Here is your printable e-ticket.</p>
+            <p>Your reservation and ticket preview are saved in this browser. No airline booking or payment was made.</p>
+            {bookings[0] && <div className="payment-receipt-card"><div className="payment-receipt-heading"><span><strong>Simulated checkout complete</strong><small>Demo receipt · no payment was processed</small></span><b>{formatMoney(bookings[0].total, bookings[0].currency || 'INR')}</b></div><div className="payment-receipt-meta"><span>Demo payment reference<strong>{bookings[0].paymentReference || `PAY-${bookings[0].id}`}</strong></span><span>Method · simulated<strong>{bookings[0].paymentMethod || 'Demo checkout'}</strong></span></div><button type="button" className="receipt-download-button" onClick={() => downloadPaymentReceipt(bookings[0])}>↓ Download demo receipt</button></div>}
               {bookings[0] && <TicketPass booking={bookings[0]} onPrint={printTicket} printTarget={printTicketId === bookings[0].id} />}
               <button className="pay-button confirmation-button" onClick={openBookings}>View my bookings <Icon name="arrow" size={18} /></button>
               <button className="text-link confirmation-home" onClick={goHome}>Back to explore</button>
@@ -1488,14 +1768,14 @@ function App() {
 
         {page === 'about' && (
           <section className="inner-page feature-page">
-            <span className="eyebrow"><span className="eyebrow-line" />FULL-STACK DEMO PLATFORM</span>
+            <span className="eyebrow"><span className="eyebrow-line" />FRONTEND FLIGHT BOOKING DEMO</span>
             <h1>Built for thoughtful <span>journeys.</span></h1>
-            <p className="help-intro">A React and Vite reservation experience with local PNR persistence, fare transparency, and a complete simulated checkout.</p>
+            <p className="help-intro">A frontend-only flight reservation experience with browser-saved demo bookings, sample fares, and simulated checkout.</p>
             <div className="feature-grid">
-              <article><strong>115+</strong><h2>Demo airports</h2><p>Domestic and international route coverage in a consistent searchable inventory.</p></article>
+              <article><strong>{Object.keys(AIRPORTS).length}</strong><h2>Demo airports</h2><p>Explore the currently available sample airport list for domestic and international routes.</p></article>
               <article><strong>4</strong><h2>Cabin choices</h2><p>Economy, Premium Economy, Business, and First Class booking selections.</p></article>
               <article><strong>PNR</strong><h2>Local reservation vault</h2><p>Bookings remain in browser storage for later viewing and cancellation.</p></article>
-              <article><strong>0</strong><h2>Real payments</h2><p>UPI, QR, bank, and card screens are safe frontend demonstrations only.</p></article>
+              <article><strong>0</strong><h2>Real payments</h2><p>UPI, QR, bank, and card screens are simulations. No payment is processed.</p></article>
             </div>
           </section>
         )}
@@ -1505,7 +1785,7 @@ function App() {
             <span className="eyebrow"><span className="eyebrow-line" />TRAVEL DESK</span>
             <h1>Send us a <span>message.</span></h1>
             <div className="contact-layout">
-              <aside className="contact-details"><h2>Concierge desk</h2><p>Skybound House, Aerocity, New Delhi 110037</p><p>+91 (011) 4090-8800</p><p>concierge@skybound-demo.in</p></aside>
+              <aside className="contact-details"><span className="demo-contact-label">SAMPLE DETAILS · NOT A LIVE SUPPORT DESK</span><h2>Demo concierge</h2><p>Skybound House, Aerocity, New Delhi 110037</p><p>+91 (011) 4090-8800</p><p>concierge@skybound-demo.in</p></aside>
               <form className="contact-form" onSubmit={(event) => { event.preventDefault(); event.currentTarget.reset(); setNotice('Your demo inquiry has been recorded. No real message was sent.') }}>
                 <label className="form-field">Your name<input className="form-control" required name="name" /></label>
                 <label className="form-field">Email address<input className="form-control" required type="email" name="email" /></label>
@@ -1520,8 +1800,9 @@ function App() {
 
         {page === 'admin' && (
           <section className="inner-page admin-page">
-            <span className="eyebrow"><span className="eyebrow-line" />OPERATIONS VIEW</span>
-            <h1>Reservation <span>operations.</span></h1>
+            <span className="eyebrow"><span className="eyebrow-line" />LOCAL DEMO DASHBOARD · NO LOGIN OR SERVER</span>
+            <h1>Demo reservation <span>overview.</span></h1>
+            <p className="admin-demo-notice">This page only reads demo bookings saved in this browser. It is not a protected admin system.</p>
             <div className="admin-metrics">
               <article><span>Total reservations</span><strong>{bookings.length}</strong></article>
               <article><span>Confirmed</span><strong>{bookings.filter((booking) => booking.status === 'Confirmed').length}</strong></article>
@@ -1601,6 +1882,39 @@ function App() {
         </div>
         <div className="footer-bottom"><span>© 2026 Skybound Aviation Systems</span><span>Demo Environment · No real payments</span></div>
       </footer>
+
+      <div className={`travel-assistant ${assistantOpen ? 'is-open' : ''}`} id="skybound-assistant-panel">
+        {!assistantOpen && <div className="assistant-greeting" aria-hidden="true"><strong>Hi! Can I help you?</strong><span>Ask me about your trip</span></div>}
+        <button
+          ref={assistantToggleRef}
+          className="assistant-launcher"
+          type="button"
+          aria-label={assistantOpen ? 'Close Skybound travel assistant' : 'Open Skybound travel assistant'}
+          aria-expanded={assistantOpen}
+          aria-controls="skybound-assistant-panel"
+          onClick={() => setAssistantOpen((open) => !open)}
+        ><AssistantPortrait /><span className="assistant-launcher-dot" aria-hidden="true" /></button>
+        {assistantOpen && <section className="assistant-panel" role="dialog" aria-label="Skybound travel assistant">
+          <header className="assistant-panel-header"><AssistantPortrait compact /><span><strong>Skybound Assistant</strong><small>Here to help with your trip</small></span><button type="button" aria-label="Close chat" onClick={() => { setAssistantOpen(false); assistantToggleRef.current?.focus() }}><Icon name="close" size={18} /></button></header>
+          <div className="assistant-chat-messages" ref={assistantMessagesRef} role="log" aria-live="polite" aria-relevant="additions text">
+            {assistantMessages.map((message, index) => <div className={`assistant-message ${message.role}`} key={`${message.role}-${index}`}>
+              {message.role === 'assistant' && <AssistantPortrait compact />}
+              <div className="assistant-message-content"><p>{message.text}</p>{message.action && <button type="button" onClick={() => runAssistantAction(message.action.type)}>{message.action.label}<Icon name="arrow" size={14} /></button>}</div>
+            </div>)}
+          </div>
+          {assistantMessages.length === 1 && <div className="assistant-quick-questions" aria-label="Suggested questions">
+            <button type="button" onClick={() => sendAssistantMessage('Which days have the lowest fare?')}>Find low fares</button>
+            <button type="button" onClick={() => sendAssistantMessage('How do I manage my booking?')}>My Trips</button>
+            <button type="button" onClick={() => sendAssistantMessage('Can I choose seats and meals?')}>Seats &amp; meals</button>
+          </div>}
+          <form className="assistant-chat-form" onSubmit={submitAssistantMessage}>
+            <label className="visually-hidden" htmlFor="assistant-question">Ask the travel assistant</label>
+            <input id="assistant-question" ref={assistantInputRef} value={assistantInput} maxLength={240} onChange={(event) => setAssistantInput(event.target.value)} placeholder="Ask about your trip..." autoComplete="off" />
+            <button type="submit" aria-label="Send message" disabled={!assistantInput.trim()}><Icon name="arrow" size={18} /></button>
+          </form>
+          <p className="assistant-demo-note">Demo travel guide · No live airline support</p>
+        </section>}
+      </div>
     </div>
   )
 }
