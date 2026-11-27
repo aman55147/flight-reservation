@@ -2345,3 +2345,268 @@ html[data-theme="dark"], html[data-theme="dark"] body { background: #101b29; col
   .home-page .fare-day > span { font-size: 9px; }
   .home-page .fare-day > b { font-size: 10px; }
 }
+
+
+/* Dark theme contrast pass: keep every surface and its text readable. */
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --ink: #edf4fa;
+  --muted: #b7c7d5;
+  --green: #71c8bd;
+  --green-dark: #4da99f;
+  --line: #354a5e;
+  --paper: #101b29;
+}
+html[data-theme="dark"] body { background: #101b29 !important; color: #e5edf4; }
+.dark-theme,
+.dark-theme .app-shell { color: #e5edf4; }
+.dark-theme :where(h1, h2, h3, h4, h5, h6, p, label, summary, td, th, dt, dd, figcaption) {
+  color: #e1ebf3;
+}
+.dark-theme :where(small, .eyebrow, .field-label, .field-sub, .help-intro, .bookings-intro, .destination-info small, .destination-description, .destination-footer, .promo-disclaimer, .fare-calendar-note, .route-map-note, .trip-option-hint, .saved-booking-options, .admin-empty) {
+  color: #b4c5d3;
+}
+.dark-theme .hero-copy h1,
+.dark-theme .hero-copy h1 span,
+.dark-theme .hero-copy > p,
+.dark-theme .hero-stats strong,
+.dark-theme .hero-stats span,
+.dark-theme .hero-tour-button,
+.dark-theme .hero-route-card > strong,
+.dark-theme .hero-route-card > small,
+.dark-theme .hero-route-card > span,
+.dark-theme .hero-art-note,
+.dark-theme .site-footer,
+.dark-theme .site-footer :where(h1,h2,h3,p,span,small,a,button) {
+  color: #f1f6fa;
+}
+.dark-theme .hero-copy h1 span { color: #9bdcf2; }
+.dark-theme .app-shell { background: #101b29 !important; }
+.dark-theme .site-header { border-bottom-color: #30475c; }
+.dark-theme .brand,
+.dark-theme .brand-name { color: #f1f6fa; }
+.dark-theme .nav-link { color: #c0ced9; }
+.dark-theme .nav-link:hover,
+.dark-theme .nav-link.active { color: #ffffff; }
+.dark-theme .profile-button { border-color: #40566a; background: #1b3044; color: #edf4f8; }
+.dark-theme .theme-toggle { border-color: #4a6479; background: #20394e; color: #ffffff; }
+.dark-theme .search-wrap,
+.dark-theme .booking-summary,
+.dark-theme .flight-card,
+.dark-theme .saved-booking,
+.dark-theme .empty-bookings,
+.dark-theme .feature-grid article,
+.dark-theme .contact-form,
+.dark-theme .admin-metrics article,
+.dark-theme .admin-table-wrap,
+.dark-theme .booking-lookup,
+.dark-theme .results-aside,
+.dark-theme .help-contact,
+.dark-theme .payment-panel,
+.dark-theme .confirmation-ticket,
+.dark-theme .leg-step,
+.dark-theme .chosen-flight-note,
+.dark-theme .no-flights,
+.dark-theme .flight-filters,
+.dark-theme .fare-calendar,
+.dark-theme .fare-alert-list,
+.dark-theme .trip-choice-card,
+.dark-theme .seat-map,
+.dark-theme .walkthrough-dialog {
+  border-color: #354d62 !important;
+  background: #192d41 !important;
+  color: #e5edf4;
+}
+.dark-theme .destinations-section,
+.dark-theme .route-map-section,
+.dark-theme .promo-section,
+.dark-theme .benefits-section,
+.dark-theme .testimonials-section,
+.dark-theme .home-lower-section {
+  border-color: #30485d !important;
+  background: #142638 !important;
+}
+.dark-theme .destination-card,
+.dark-theme .promo-grid article,
+.dark-theme .benefits-grid article,
+.dark-theme .testimonials-grid article {
+  border-color: #3a5268 !important;
+  background: #1b3044 !important;
+  color: #e5edf4;
+}
+.dark-theme .destination-info strong,
+.dark-theme .destination-price,
+.dark-theme .destination-price b,
+.dark-theme .promo-heading h2,
+.dark-theme .promo-grid h3,
+.dark-theme .benefits-grid h3,
+.dark-theme .testimonials-grid strong,
+.dark-theme .section-heading h2,
+.dark-theme .destination-heading-copy h2,
+.dark-theme .route-map-copy h2,
+.dark-theme .help-faq h2,
+.dark-theme .help-contact h2,
+.dark-theme .checkout-section-title h2,
+.dark-theme .booking-summary h2,
+.dark-theme .admin-metrics article strong,
+.dark-theme .admin-table td,
+.dark-theme .admin-table th,
+.dark-theme .results-toolbar strong,
+.dark-theme .flight-airline strong,
+.dark-theme .flight-times > strong,
+.dark-theme .flight-price strong,
+.dark-theme .saved-route strong,
+.dark-theme .saved-booking-bottom strong,
+.dark-theme .trip-option-heading strong,
+.dark-theme .trip-choice-card > strong,
+.dark-theme .leg-step strong,
+.dark-theme .chosen-flight-note strong {
+  color: #f0f6fb !important;
+}
+.dark-theme .destination-description,
+.dark-theme .destination-footer,
+.dark-theme .promo-grid p,
+.dark-theme .benefits-grid p,
+.dark-theme .testimonials-grid p,
+.dark-theme .destination-heading-copy p,
+.dark-theme .route-map-copy > p,
+.dark-theme .help-contact p,
+.dark-theme .help-question p,
+.dark-theme .help-question summary,
+.dark-theme .results-heading p,
+.dark-theme .results-toolbar,
+.dark-theme .flight-airline span,
+.dark-theme .flight-duration,
+.dark-theme .flight-price span,
+.dark-theme .saved-booking-top,
+.dark-theme .saved-route > div > span,
+.dark-theme .saved-booking-options,
+.dark-theme .trip-option-heading > span,
+.dark-theme .leg-step small,
+.dark-theme .admin-metrics article span,
+.dark-theme .admin-table th,
+.dark-theme .footer-main div:not(.footer-about) > span,
+.dark-theme .footer-main div:not(.footer-about) > button,
+.dark-theme .footer-about p,
+.dark-theme .footer-bottom {
+  color: #b6c7d5 !important;
+}
+.dark-theme .search-tabs,
+.dark-theme .trip-tabs,
+.dark-theme .checkout-section,
+.dark-theme .help-question,
+.dark-theme .admin-table th,
+.dark-theme .admin-table td,
+.dark-theme .saved-booking-bottom,
+.dark-theme .saved-itinerary-leg,
+.dark-theme .boarding-ticket-pnr,
+.dark-theme .boarding-ticket-leg,
+.dark-theme .ticket-passengers-heading {
+  border-color: #354b60 !important;
+}
+.dark-theme .trip-tab,
+.dark-theme .search-caption,
+.dark-theme .field-control select,
+.dark-theme .field-control input,
+.dark-theme .form-field,
+.dark-theme .form-field input,
+.dark-theme .form-field select,
+.dark-theme .form-field textarea,
+.dark-theme .flight-filters label,
+.dark-theme .flight-filters select,
+.dark-theme .results-toolbar select,
+.dark-theme .assistant-chat-form input {
+  color: #edf4f8 !important;
+}
+.dark-theme .form-field input,
+.dark-theme .form-field select,
+.dark-theme .form-field textarea,
+.dark-theme .flight-filters select,
+.dark-theme .results-toolbar select,
+.dark-theme .assistant-chat-form input {
+  border-color: #405970 !important;
+  background: #102337 !important;
+}
+.dark-theme input::placeholder,
+.dark-theme textarea::placeholder { color: #91a5b6 !important; opacity: 1; }
+.dark-theme .search-field:hover,
+.dark-theme .search-field:focus-within { background: #20394e !important; }
+.dark-theme .swap-button,
+.dark-theme .payment-method,
+.dark-theme .passenger-tab,
+.dark-theme .seat-leg-tabs button,
+.dark-theme .trip-tabs button,
+.dark-theme .fare-day,
+.dark-theme .route-map-targets button,
+.dark-theme .fare-calendar-controls button,
+.dark-theme .promo-code button,
+.dark-theme .walkthrough-back,
+.dark-theme .walkthrough-close {
+  border-color: #405970 !important;
+  background: #20384d !important;
+  color: #e7f0f6 !important;
+}
+.dark-theme .trip-tabs button.selected,
+.dark-theme .passenger-tab.selected,
+.dark-theme .seat-leg-tabs button.selected,
+.dark-theme .trip-choice-card.selected,
+.dark-theme .route-map-targets button.selected {
+  border-color: #69b9ce !important;
+  background: #24485c !important;
+  color: #ffffff !important;
+}
+.dark-theme .seat-button { border-color: #476176; background: #243b4f; color: #e0ebf2; }
+.dark-theme .seat-button:disabled { border-color: #3a4b5b; background: #2a3948; color: #9aabba; }
+.dark-theme .seat-button.selected { border-color: #62b8ad; background: #16796f; color: #fff; }
+.dark-theme .seat-map { border-color: #3a5268; background: #14283b; }
+.dark-theme .seat-legend { color: #c1d0dc; }
+.dark-theme .payment-panel,
+.dark-theme .booking-summary,
+.dark-theme .confirmation-ticket,
+.dark-theme .saved-itinerary-leg,
+.dark-theme .chosen-flight-note { color: #e5edf4; }
+.dark-theme .boarding-ticket { border-color: #3a5268; background: #f8fbfd; color: #21384b; }
+.dark-theme .boarding-ticket :where(p,span,small,strong,b,div) { color: inherit; }
+.dark-theme .boarding-ticket-header { background: linear-gradient(110deg, #102a45, #17617b); color: #fff; }
+.dark-theme .ticket-status { color: #1f704f; }
+.dark-theme .ticket-leg-title,
+.dark-theme .ticket-leg-route span,
+.dark-theme .ticket-leg-meta,
+.dark-theme .ticket-passenger-row { color: #65798b; }
+.dark-theme .ticket-leg-route strong,
+.dark-theme .ticket-leg-route b,
+.dark-theme .ticket-passenger-row strong { color: #21384b; }
+.dark-theme .route-map-visual { border-color: #3b5266; background: #1a3044; }
+.dark-theme .map-continent { fill: #29475d; stroke: #3b5b73; }
+.dark-theme .map-africa { fill: #31536a; }
+.dark-theme .map-graticule { stroke: #3b566d; }
+.dark-theme .map-airport text { fill: #d5e5ef; }
+.dark-theme .map-airport.selected text { fill: #ffffff; }
+.dark-theme .route-map-targets small,
+.dark-theme .route-map-targets strong span { color: #b5c8d7; }
+.dark-theme .main-nav.is-open { background: #142b40; }
+.dark-theme .main-nav.is-open .nav-link { color: #d9e7f0; }
+.dark-theme .main-nav.is-open .nav-link.active { color: #fff; }
+.dark-theme .help-question summary { color: #e4edf4 !important; }
+.dark-theme .help-question p { color: #b8c9d6 !important; }
+.dark-theme .confirmation-check,
+.dark-theme .empty-icon,
+.dark-theme .benefit-icon,
+.dark-theme .step-number,
+.dark-theme .method-symbol { background: #25465a; color: #a9dfeb; }
+.dark-theme .destination-book,
+.dark-theme .select-flight { border-color: #42677e; background: #24465c; color: #bde5f3; }
+.dark-theme .destination-book:hover,
+.dark-theme .select-flight:hover { background: #1766a2; color: #fff; }
+.dark-theme .footer-bottom { border-top-color: #3b5266; }
+.dark-theme .site-footer { background: #0c2032 !important; border-top-color: #287fa1; }
+.dark-theme .assistant-panel,
+.dark-theme .assistant-greeting { border-color: #3b5266; background: #192d41; color: #e5edf4; }
+.dark-theme .assistant-panel :where(p,span,strong,small,button) { color: #e5edf4; }
+.dark-theme .assistant-chat-messages { background: #142638; }
+.dark-theme .assistant-message-content { background: #20384d; color: #e5edf4; }
+.dark-theme .assistant-chat-form { border-color: #3b5266; background: #192d41; }
+
+@media (prefers-reduced-motion: reduce) {
+  .dark-theme * { scroll-behavior: auto !important; }
+}
